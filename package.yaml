@@ -1,0 +1,33 @@
+name: small-games
+maintainer: "ashkan.kh.nazary@gmail.com"
+
+dependencies:
+  - base >= 4.7 && < 5
+  - containers
+
+ghc-options:
+  - -Wall
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wmissing-export-lists
+  - -Wmissing-home-modules
+  - -Wpartial-fields
+  - -Wredundant-constraints
+
+library:
+  source-dirs: lib
+
+executables:
+  tic-tac-toe:
+    main: tic-tac-toe.hs
+    source-dirs: app
+    dependencies:
+      - small-games
+
+  rock-paper-scissors:
+    main: rock-paper-scissors.hs
+    source-dirs: app
+    dependencies:
+      - small-games
