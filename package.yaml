@@ -4,6 +4,7 @@ maintainer: "ashkan.kh.nazary@gmail.com"
 dependencies:
   - base >= 4.7 && < 5
   - containers
+  - yesod-core
 
 ghc-options:
   - -Wall
@@ -31,3 +32,9 @@ executables:
     source-dirs: app
     dependencies:
       - small-games
+      
+  yesod:
+    main: yesod.hs
+    source-dirs: app
+    # dependencies:
+    #   - small-games
