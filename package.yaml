@@ -9,6 +9,7 @@ dependencies:
   - aeson
   - conduit
   - binary
+  - bytestring
 
 ghc-options:
   - -Wall
