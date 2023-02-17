@@ -19,8 +19,12 @@ library
       lib
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
+    , binary
+    , conduit
     , containers
+    , text
     , yesod-core
   default-language: Haskell2010
 
@@ -32,9 +36,13 @@ executable rock-paper-scissors
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
+    , binary
+    , conduit
     , containers
     , small-games
+    , text
     , yesod-core
   default-language: Haskell2010
 
@@ -46,9 +54,13 @@ executable tic-tac-toe
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
+    , binary
+    , conduit
     , containers
     , small-games
+    , text
     , yesod-core
   default-language: Haskell2010
 
@@ -60,7 +72,11 @@ executable yesod
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
+    , binary
+    , conduit
     , containers
+    , text
     , yesod-core
   default-language: Haskell2010
