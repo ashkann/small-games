@@ -25,8 +25,11 @@ library
     , bytestring
     , conduit
     , containers
+    , stm
     , text
+    , wai-extra
     , yesod-core
+    , yesod-eventsource
   default-language: Haskell2010
 
 executable rock-paper-scissors
@@ -44,8 +47,11 @@ executable rock-paper-scissors
     , conduit
     , containers
     , small-games
+    , stm
     , text
+    , wai-extra
     , yesod-core
+    , yesod-eventsource
   default-language: Haskell2010
 
 executable tic-tac-toe
@@ -63,8 +69,11 @@ executable tic-tac-toe
     , conduit
     , containers
     , small-games
+    , stm
     , text
+    , wai-extra
     , yesod-core
+    , yesod-eventsource
   default-language: Haskell2010
 
 executable yesod
@@ -81,6 +90,9 @@ executable yesod
     , bytestring
     , conduit
     , containers
+    , stm
     , text
+    , wai-extra
     , yesod-core
+    , yesod-eventsource
   default-language: Haskell2010

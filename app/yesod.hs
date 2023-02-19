@@ -7,13 +7,17 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 
-import Data.Aeson
-import Data.Text qualified as T
-import Data.Binary.Builder qualified as B
+import Conduit ((.|))
 import Conduit qualified as C
-import Yesod.Core
+import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent.STM
+import Data.Aeson
+import Data.Binary.Builder qualified as B
 import Data.ByteString.Lazy.Char8 qualified as L
-import Control.Concurrent (threadDelay)
+import Data.Text qualified as T
+import Network.Wai.EventSource.EventStream
+import Yesod.Core
+import Yesod.EventSource
 
 newtype Natural = Natural Int deriving (Eq, Show, Read)
 
@@ -26,20 +30,34 @@ instance PathPiece Natural where
         | otherwise -> Just $ Natural i
       _ -> Nothing
 
-data App = App
-
-data Person = Person {name :: T.Text, age :: Int}
-
-instance ToJSON Person where
-  toJSON Person {..} =
-    object
-      [ "name" .= name,
-        "age" .= age
-      ]
-
 newtype Counter = Counter Int
+
 instance ToJSON Counter where
-  toJSON (Counter c) = object ["i".= c]
+  toJSON (Counter c) = object ["i" .= c]
+
+events :: MonadIO m => C.ConduitT () Counter m ()
+events =
+  C.yieldMany [1 ..]
+    .| C.mapMC (\i -> do liftIO $ threadDelay (1000 * 1000); return i)
+    .| C.mapC Counter
+
+data Topic m a = Topic {chan :: TChan a, write :: C.ConduitT () C.Void m ()}
+
+topic :: MonadIO m => C.ConduitT () a m () -> m (Topic m a)
+topic src = do
+  ch <- liftIO newBroadcastTChanIO
+  let write = src .| C.mapM_C (liftIO . atomically . writeTChan ch)
+  return $ Topic {chan = ch, write = write}
+
+subscribe :: MonadIO m => Topic m a -> m (C.ConduitT () a m ())
+subscribe (Topic {chan = ch}) = do
+  newCh <- liftIO $ atomically $ dupTChan ch
+  return (C.repeatMC $ liftIO . atomically $ readTChan newCh)
+
+run :: MonadIO m => Topic m a -> m ()
+run Topic {write = e} = C.runConduit e
+
+data App = App
 
 mkYesod
   "App"
@@ -49,18 +67,28 @@ mkYesod
 
 instance Yesod App where
   makeSessionBackend _ = return Nothing
-  shouldLogIO App _ _ = return True
+  shouldLogIO _ _ _ = return True
 
 getServerSentEventsR :: Handler TypedContent
-getServerSentEventsR = respondSource "text/event-stream" $ events `C.fuse` C.concatC
+getServerSentEventsR = repEventSource magic
   where
-    xs = C.yieldMany [1..] :: C.ConduitT () Int Handler ()
-    ys = xs `C.fuse` C.mapMC (\i -> do { liftIO $ threadDelay (1000 * 1000); return i })
-    zs = ys `C.fuse` C.mapC Counter
-    events = zs `C.fuse` C.mapC (\d -> [C.Chunk $ B.putStringUtf8 $ "data: " ++ L.unpack (encode d) ++ "\n\n", C.Flush])
+    magic _ = events .| C.mapC ev
+    ev d =
+      ServerEvent
+        { eventName = Just $ B.putStringUtf8 "Counter",
+          eventId = Just $ B.putStringUtf8 "1",
+          eventData = [B.putStringUtf8 $ L.unpack (encode d)]
+        }
+
+-- getServerSentEventsR :: Handler Html
+-- getServerSentEventsR = defaultLayout [whamlet|Hello World!|]
 
 main :: IO ()
-main = warp 3000 App
+main = do
+  -- t <- topic events
+  -- _ <- forkIO $ run t
+  warp 3000 App
+
 -- main = C.runConduit $ C.yieldMany [1..10 :: Int] `C.fuse` C.mapMC (\i -> do { liftIO $ threadDelay (1000 * 1000); return i }) `C.fuse` C.mapM_C print
 -- errorHandler NotFound = undefined
 -- errorHandler other = defaultErrorHandler other
