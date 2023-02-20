@@ -17,16 +17,20 @@ library
       Paths_small_games
   hs-source-dirs:
       lib
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded
   build-depends:
       aeson
     , base >=4.7 && <5
     , binary
+    , brick
     , bytestring
     , conduit
     , containers
+    , random
     , stm
     , text
+    , uuid
+    , vty
     , wai-extra
     , yesod-core
     , yesod-eventsource
@@ -38,17 +42,46 @@ executable rock-paper-scissors
       Paths_small_games
   hs-source-dirs:
       app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded
   build-depends:
       aeson
     , base >=4.7 && <5
     , binary
+    , brick
     , bytestring
     , conduit
     , containers
+    , random
     , small-games
     , stm
     , text
+    , uuid
+    , vty
+    , wai-extra
+    , yesod-core
+    , yesod-eventsource
+  default-language: Haskell2010
+
+executable server
+  main-is: server.hs
+  other-modules:
+      Paths_small_games
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , binary
+    , brick
+    , bytestring
+    , conduit
+    , containers
+    , random
+    , stm
+    , text
+    , uuid
+    , vty
     , wai-extra
     , yesod-core
     , yesod-eventsource
@@ -60,38 +93,46 @@ executable tic-tac-toe
       Paths_small_games
   hs-source-dirs:
       app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded
   build-depends:
       aeson
     , base >=4.7 && <5
     , binary
+    , brick
     , bytestring
     , conduit
     , containers
+    , random
     , small-games
     , stm
     , text
+    , uuid
+    , vty
     , wai-extra
     , yesod-core
     , yesod-eventsource
   default-language: Haskell2010
 
-executable yesod
-  main-is: yesod.hs
+executable tui-client
+  main-is: tui-client.hs
   other-modules:
       Paths_small_games
   hs-source-dirs:
       app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded
   build-depends:
       aeson
     , base >=4.7 && <5
     , binary
+    , brick
     , bytestring
     , conduit
     , containers
+    , random
     , stm
     , text
+    , uuid
+    , vty
     , wai-extra
     , yesod-core
     , yesod-eventsource

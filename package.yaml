@@ -13,6 +13,10 @@ dependencies:
   - binary
   - bytestring
   - stm
+  - random
+  - uuid
+  - brick
+  - vty
 
 ghc-options:
   - -Wall
@@ -24,6 +28,7 @@ ghc-options:
   - -Wmissing-home-modules
   - -Wpartial-fields
   - -Wredundant-constraints
+  - -threaded
 
 library:
   source-dirs: lib
@@ -41,8 +46,12 @@ executables:
     dependencies:
       - small-games
       
-  yesod:
-    main: yesod.hs
+  server:
+    main: server.hs
+    source-dirs: app
+
+  tui-client:
+    main: tui-client.hs
     source-dirs: app
     # dependencies:
     #   - small-games
