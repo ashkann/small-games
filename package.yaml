@@ -10,6 +10,7 @@ dependencies:
   - text
   - aeson
   - conduit
+  - conduit-extra
   - binary
   - bytestring
   - stm
@@ -17,6 +18,9 @@ dependencies:
   - uuid
   - brick
   - vty
+  - http-conduit
+  - resourcet
+  - attoparsec
 
 ghc-options:
   - -Wall

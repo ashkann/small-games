@@ -20,13 +20,17 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded
   build-depends:
       aeson
+    , attoparsec
     , base >=4.7 && <5
     , binary
     , brick
     , bytestring
     , conduit
+    , conduit-extra
     , containers
+    , http-conduit
     , random
+    , resourcet
     , stm
     , text
     , uuid
@@ -45,13 +49,17 @@ executable rock-paper-scissors
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded
   build-depends:
       aeson
+    , attoparsec
     , base >=4.7 && <5
     , binary
     , brick
     , bytestring
     , conduit
+    , conduit-extra
     , containers
+    , http-conduit
     , random
+    , resourcet
     , small-games
     , stm
     , text
@@ -71,13 +79,17 @@ executable server
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded
   build-depends:
       aeson
+    , attoparsec
     , base >=4.7 && <5
     , binary
     , brick
     , bytestring
     , conduit
+    , conduit-extra
     , containers
+    , http-conduit
     , random
+    , resourcet
     , stm
     , text
     , uuid
@@ -96,13 +108,17 @@ executable tic-tac-toe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded
   build-depends:
       aeson
+    , attoparsec
     , base >=4.7 && <5
     , binary
     , brick
     , bytestring
     , conduit
+    , conduit-extra
     , containers
+    , http-conduit
     , random
+    , resourcet
     , small-games
     , stm
     , text
@@ -122,13 +138,17 @@ executable tui-client
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded
   build-depends:
       aeson
+    , attoparsec
     , base >=4.7 && <5
     , binary
     , brick
     , bytestring
     , conduit
+    , conduit-extra
     , containers
+    , http-conduit
     , random
+    , resourcet
     , stm
     , text
     , uuid
