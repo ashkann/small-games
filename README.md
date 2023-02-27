@@ -1,0 +1,1 @@
+A bundle of small games done in Haskell

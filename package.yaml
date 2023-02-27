@@ -21,6 +21,7 @@ dependencies:
   - http-conduit
   - resourcet
   - attoparsec
+  - mtl
 
 ghc-options:
   - -Wall

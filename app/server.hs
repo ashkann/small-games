@@ -17,9 +17,6 @@ import Data.ByteString.Lazy.Char8 qualified as L
 import Network.Wai.EventSource.EventStream
 import Yesod.Core
 import Yesod.EventSource
-import System.Random
-import Data.UUID
-
 
 -- newtype Natural = Natural Int deriving (Eq, Show, Read)
 
@@ -54,16 +51,6 @@ mkYesod
 instance Yesod App where
   makeSessionBackend _ = return Nothing
   shouldLogIO _ _ _ = return True
-
-
-someUUIDs :: [UUID]
-someUUIDs =
-  let seed = 123
-      g0 = mkStdGen seed -- RNG from seed
-      (u1, g1) = random g0
-      (u2, g2) = random g1
-      (u3, g3) = random g2
-  in [u1,u2,u3]  
 
 getServerSentEventsR :: Handler TypedContent
 getServerSentEventsR = do

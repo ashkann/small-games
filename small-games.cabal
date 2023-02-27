@@ -12,6 +12,7 @@ build-type:     Simple
 library
   exposed-modules:
       RockPaperScissors
+      Session
       TicTacToe
   other-modules:
       Paths_small_games
@@ -29,6 +30,7 @@ library
     , conduit-extra
     , containers
     , http-conduit
+    , mtl
     , random
     , resourcet
     , stm
@@ -58,6 +60,7 @@ executable rock-paper-scissors
     , conduit-extra
     , containers
     , http-conduit
+    , mtl
     , random
     , resourcet
     , small-games
@@ -88,6 +91,7 @@ executable server
     , conduit-extra
     , containers
     , http-conduit
+    , mtl
     , random
     , resourcet
     , stm
@@ -117,6 +121,7 @@ executable tic-tac-toe
     , conduit-extra
     , containers
     , http-conduit
+    , mtl
     , random
     , resourcet
     , small-games
@@ -147,6 +152,7 @@ executable tui-client
     , conduit-extra
     , containers
     , http-conduit
+    , mtl
     , random
     , resourcet
     , stm

@@ -1,18 +1,15 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Redundant where" #-}
 
 import Brick
-import Brick.BChan qualified
+import Brick.BChan (newBChan, writeBChan)
 import Brick.Widgets.Center
 import Conduit
 import Control.Concurrent (forkIO)
 import Control.Monad
 import Data.Aeson
-import Data.Attoparsec.ByteString
+import Data.Attoparsec.ByteString qualified as P
 import Data.Binary.Builder
 import Data.ByteString (ByteString)
 import Graphics.Vty qualified as V
@@ -23,7 +20,7 @@ import Network.Wai.EventSource
 newtype Counter = Counter Int
 
 instance FromJSON Counter where
-  parseJSON (Object v) =  Counter <$> v .: "i"
+  parseJSON (Object v) = Counter <$> v .: "i"
   parseJSON _ = fail "Counldn't parse"
 
 draw :: Maybe Int -> [Widget ()]
@@ -52,8 +49,8 @@ instance Show ServerEvent where
 
 main :: IO ()
 main = do
-  chan <- Brick.BChan.newBChan 10
-  _ <- forkIO $ runConduitRes $ httpSource "http://localhost:3000/sse" $ (.| concatMapC toServerEvent .| concatMapC toAppEvent .| mapM_C (liftIO . Brick.BChan.writeBChan chan)) . responseBody
+  chan <- newBChan 10
+  _ <- forkIO $ runConduitRes $ httpSource "http://localhost:3000/sse" $ publish chan . responseBody
   let app =
         App
           { appDraw = draw,
@@ -72,17 +69,23 @@ main = do
   _ <- customMain initialVty buildVty (Just chan) app initialState
   return ()
   where
+    publish chan x =
+      x
+        .| concatMapC toServerEvent
+        .| concatMapC toAppEvent
+        .| mapM_C (liftIO . writeBChan chan)
+
     toServerEvent :: ByteString -> Either String ServerEvent
-    toServerEvent = parseOnly p
+    toServerEvent = P.parseOnly p
       where
         p = do
           let newLine = toEnum (fromEnum '\n')
-          _ <- string "event:"
-          eventName <- takeWhile1 (/= newLine)
-          _ <- satisfy (== newLine)
-          _ <- string "data:"
-          eventData <- takeWhile1 (/= newLine)
-          replicateM_ 2 $ satisfy (== newLine)
+          _ <- P.string "event:"
+          eventName <- P.takeWhile1 (/= newLine)
+          _ <- P.satisfy (== newLine)
+          _ <- P.string "data:"
+          eventData <- P.takeWhile1 (/= newLine)
+          replicateM_ 2 $ P.satisfy (== newLine)
           return
             ServerEvent
               { eventData = [fromByteString eventData],
