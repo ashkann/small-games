@@ -94,6 +94,7 @@ executable server
     , mtl
     , random
     , resourcet
+    , small-games
     , stm
     , text
     , uuid

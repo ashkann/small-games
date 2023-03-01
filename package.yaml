@@ -54,6 +54,8 @@ executables:
   server:
     main: server.hs
     source-dirs: app
+    dependencies:
+      - small-games
 
   tui-client:
     main: tui-client.hs

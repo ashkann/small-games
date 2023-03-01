@@ -1,0 +1,15 @@
+@startuml state
+== Create a game ==
+Client -> Server : create()
+Server -> Session : create()
+Session --> Server : GameId
+Server --> Client : GameUrl
+== Join a game ==
+Client -> Server : join(id: GameId)
+
+== List games ==
+Client -> Server: listGames()
+Server -> Session : list()
+Session --> Server : [Game(player1, player2)]
+Server --> Client: [Game(player1, player2, GameUrl)]
+@enduml
