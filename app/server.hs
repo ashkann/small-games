@@ -85,27 +85,33 @@ instance S.SessionManager Handler GameId (Room Handler Counter) where
   write (GameId id) room = withRooms (S.write id room)
   update f (GameId id) = withRooms (S.update f id)
   delete (GameId id) = withRooms (S.delete id)
+  read (GameId id) = withRooms (S.read id)
+
+toServerEvent :: ToJSON a => a -> ServerEvent
+toServerEvent a =
+  ServerEvent
+    { eventName = Just $ B.putStringUtf8 "Counter",
+      eventId = Nothing, -- Just $ B.putStringUtf8 "1",
+      eventData = [B.putStringUtf8 $ L.unpack (encode a)]
+    }
+
+join :: ToJSON b => Room m b -> HandlerFor site TypedContent
+join Room {chan = ch} = do
+  chann <- liftIO $ atomically $ dupTChan ch
+  let readCh = C.repeatMC (liftIO . atomically $ readTChan chann)
+  repEventSource (\_ -> readCh .| C.mapC toServerEvent)    
 
 postCreateGameR :: Handler TypedContent
 postCreateGameR = do
   g@(Game events) <- createGame
   ch <- liftIO newBroadcastTChanIO
-  _ :: GameId <- S.create $ Room g ch
-  chann <- liftIO $ atomically $ dupTChan ch
-  let readCh = C.repeatMC (liftIO . atomically $ readTChan chann)
   let write = events .| C.mapM_C (liftIO . atomically . writeTChan ch)
-  _ <- forkHandler ($logError . T.pack . show) (C.runConduit write)
-  repEventSource (\_ -> readCh .| C.mapC toServerEvent)
-  where
-    toServerEvent a =
-      ServerEvent
-        { eventName = Just $ B.putStringUtf8 "Counter",
-          eventId = Nothing, -- Just $ B.putStringUtf8 "1",
-          eventData = [B.putStringUtf8 $ L.unpack (encode a)]
-        }
+  let room = Room g ch
+  _ <- S.create room
+  join room <* forkHandler ($logError . T.pack . show) (C.runConduit write)
 
 postJoinGameR :: GameId -> Handler TypedContent
-postJoinGameR = undefined
+postJoinGameR id = join =<< S.read id
 
 main :: IO ()
 main = do
