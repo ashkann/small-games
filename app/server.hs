@@ -20,14 +20,9 @@ import Data.ByteString.Lazy.Char8 qualified as L
 import Data.Map qualified as M
 import Data.Text qualified as T
 import Network.Wai.EventSource.EventStream
-import Session (InMemory)
-import Session qualified as S
+import Host qualified as H
 import Yesod.Core
 import Yesod.EventSource
-
--- import TicTacToe
-
--- import Session (SessionManager(create))
 
 newtype GameId = GameId Int deriving (Eq, Show, Read)
 
@@ -54,9 +49,6 @@ createGame =
             .| C.mapC Counter
       }
 
--- startGame :: Game m Counter -> m ()
--- startGame (Game events) = _
-
 instance ToJSON Counter where
   toJSON (Counter c) = object ["i" .= c]
 
@@ -75,17 +67,17 @@ instance Yesod App where
   makeSessionBackend _ = return Nothing
   shouldLogIO _ _ _ = return True
 
-withRooms :: InMemory Int (Room Handler Counter) a -> Handler a
+withRooms :: H.InMemory Int (Room Handler Counter) a -> Handler a
 withRooms act = do
   App {rooms = r} <- getYesod
-  liftIO . atomically $ S.run act r
+  liftIO . atomically $ H.run act r
 
-instance S.SessionManager Handler GameId (Room Handler Counter) where
-  create room = GameId <$> withRooms (S.create room)
-  write (GameId id) room = withRooms (S.write id room)
-  update f (GameId id) = withRooms (S.update f id)
-  delete (GameId id) = withRooms (S.delete id)
-  read (GameId id) = withRooms (S.read id)
+instance H.Host Handler GameId (Room Handler Counter) where
+  create room = GameId <$> withRooms (H.create room)
+  write (GameId id) room = withRooms (H.write id room)
+  update f (GameId id) = withRooms (H.update f id)
+  delete (GameId id) = withRooms (H.delete id)
+  read (GameId id) = withRooms (H.read id)
 
 toServerEvent :: ToJSON a => a -> ServerEvent
 toServerEvent a =
@@ -107,11 +99,11 @@ postCreateGameR = do
   ch <- liftIO newBroadcastTChanIO
   let write = events .| C.mapM_C (liftIO . atomically . writeTChan ch)
   let room = Room g ch
-  _ <- S.create room
+  _ <- H.create room
   join room <* forkHandler ($logError . T.pack . show) (C.runConduit write)
 
 postJoinGameR :: GameId -> Handler TypedContent
-postJoinGameR id = join =<< S.read id
+postJoinGameR id = join =<< H.read id
 
 main :: IO ()
 main = do

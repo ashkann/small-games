@@ -11,8 +11,8 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Host
       RockPaperScissors
-      Session
       TicTacToe
   other-modules:
       Paths_small_games

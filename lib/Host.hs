@@ -2,14 +2,18 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 
-module Session (SessionManager (..), InMemory (..)) where
+module Host (Host (..), InMemory (..)) where
 
 import Control.Concurrent.STM (STM, TVar, modifyTVar, readTVar, throwSTM)
+import Control.Exception qualified as Ex
 import Data.Map qualified as M
 import Prelude hiding (id, lookup)
-import Control.Exception (SomeException, Exception)
+import Data.Data (Typeable)
 
-class SessionManager m k s | m -> k s where
+newtype NotFound k = NotFound k deriving (Show)
+instance (Typeable k, Show k) => Ex.Exception (NotFound k)
+
+class Host m k s | m -> k s where
   create :: s -> m k
   read :: k -> m s
   write :: k -> s -> m ()
@@ -21,21 +25,17 @@ newtype InMemory id s a = InMemory {run :: TVar (M.Map id s) -> STM a}
 modify :: (M.Map id s -> M.Map id s) -> InMemory id s ()
 modify f = InMemory $ \tvar -> do modifyTVar tvar f
 
-newtype MyException = MyException String deriving Show
-
-instance Exception MyException
-
-instance SessionManager (InMemory Int a) Int a where
+instance Host (InMemory Int a) Int a where
   create s = InMemory $ \tvar -> do
-    id <- (+ 1) . M.size <$> readTVar tvar
+    id <- succ . M.size <$> readTVar tvar
     modifyTVar tvar (M.insert id s)
     return id
 
   read id = InMemory $ \tvar -> do
     s <- M.lookup id <$> readTVar tvar
-    case s of
-      Just s' -> return s'
-      Nothing -> throwSTM $ MyException ("No such element" ++ show id)
+    maybe err return s
+    where
+      err = throwSTM $ NotFound id
 
   write id s = modify $ M.insert id s
   update f id = modify $ M.update (Just . f) id
