@@ -1,16 +1,20 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE UndecidableInstances #-}
 
-module Host (Host (..), InMemory (..)) where
+module Host(Host(..), InMemory(..)) where
 
-import Control.Concurrent.STM (STM, TVar, modifyTVar, readTVar, throwSTM)
+import Control.Concurrent.STM
 import Control.Exception qualified as Ex
-import Data.Map qualified as M
-import Prelude hiding (id, lookup)
 import Data.Data (Typeable)
+import Data.Map qualified as M
+import Prelude hiding (id, lookup, read)
 
 newtype NotFound k = NotFound k deriving (Show)
+
 instance (Typeable k, Show k) => Ex.Exception (NotFound k)
 
 class Host m k s | m -> k s where
@@ -20,9 +24,9 @@ class Host m k s | m -> k s where
   update :: (s -> s) -> k -> m ()
   delete :: k -> m ()
 
-newtype InMemory id s a = InMemory {run :: TVar (M.Map id s) -> STM a}
+newtype InMemory k s a = InMemory {run :: TVar (M.Map k s) -> STM a}
 
-modify :: (M.Map id s -> M.Map id s) -> InMemory id s ()
+modify :: (M.Map k s -> M.Map k s) -> InMemory k s ()
 modify f = InMemory $ \tvar -> do modifyTVar tvar f
 
 instance Host (InMemory Int a) Int a where
