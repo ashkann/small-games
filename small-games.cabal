@@ -11,6 +11,8 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Counter
+      Game
       Host
       RockPaperScissors
       TicTacToe
