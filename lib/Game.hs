@@ -1,38 +1,25 @@
-module Game where
+module Game
+  ( Game (..),
+    Room (..),
+    createRoom,
+  )
+where
 
 import Conduit (ConduitT, repeatMC)
-import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
-import Control.Monad (forever, void)
-import Yesod.Core
-import Prelude hiding (id, log, read)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 
--- Game
-type Callback m o = o -> m ()
+newtype Game m i o = Game {create :: TChan i -> TChan o -> m ()}
 
-type Submit m i = i -> m ()
+data Room m i o = Room {startGame :: m (), input :: i -> m (), output :: m (ConduitT () o m ())}
 
-newtype Game m g i o = Game {createGame :: g -> Callback IO o -> m (Submit m i)}
-
--- Room
-type Subscribe m o = Callback IO o -> m ()
-
-data Room m i o = Room {submit :: Submit m i, subscribe :: Subscribe m o}
-
-createRoom :: MonadIO m => Game m g i o -> g -> m (Room m i o)
-createRoom Game {createGame = create} g = do
-  out <- liftIO . atomically $ newBroadcastTChan
-  let write o = atomically $ writeTChan out o
-  submit <- create g write
-  let subscribe cb = do
-        ch <- liftIO . atomically $ dupTChan out
-        let go = forever $ cb =<< atomically (readTChan ch)
-        void $ liftIO . forkIO $ go
-
-  return $ Room {submit = submit, subscribe = subscribe}
-
-subscribeC :: MonadIO m => Room m i o -> m (ConduitT () o m ())
-subscribeC Room {subscribe = subscribe} = do
-  ch <- liftIO newTChanIO
-  _ <- subscribe $ atomically . writeTChan ch
-  return $ repeatMC (liftIO . atomically $ readTChan ch)
+createRoom :: MonadIO m => Game m i o -> m (Room m i o)
+createRoom Game {create = create} = do
+  ochan <- liftIO newBroadcastTChanIO
+  ichan <- liftIO newTChanIO
+  let g = create ichan ochan
+  let output = do
+        ch <- liftIO . atomically $ dupTChan ochan
+        return $ repeatMC (liftIO . atomically $ readTChan ch)
+  let input i = liftIO . atomically $ writeTChan ichan i
+  return $ Room {input = input, output = output, startGame = g}

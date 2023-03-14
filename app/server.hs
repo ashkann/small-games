@@ -14,18 +14,18 @@
 import Conduit ((.|))
 import Conduit qualified as C
 import Control.Concurrent.STM
+import Counter qualified as Cn
 import Data.Aeson
 import Data.Binary.Builder qualified as B
 import Data.ByteString.Lazy.Char8 qualified as L
 import Data.Map qualified as M
 import Data.Text qualified as T
-import Host qualified as H
 import Game qualified as G
+import Host qualified as H
 import Network.Wai.EventSource.EventStream
 import Yesod.Core
 import Yesod.EventSource
-import Prelude hiding (id, read, log)
-import Counter qualified as Cn
+import Prelude hiding (id, log, read)
 
 newtype GameId = GameId Int deriving (Eq, Show, Read)
 
@@ -46,7 +46,10 @@ mkYesod
   "App"
   [parseRoutes|
     /create CreateGameR POST
-    /join/#GameId JoinGameR POST
+    /#GameId/join JoinGameR POST
+    /#GameId/faster FasterR POST
+    /#GameId/slower SlowerR POST
+    /#GameId/reset ResetR POST
 |]
 
 app :: H.InMemory Int (G.Room Handler Cn.Input Cn.Output) a -> Handler a
@@ -74,17 +77,37 @@ toServerEvent a =
       eventData = [B.putStringUtf8 $ L.unpack (encode a)]
     }
 
-join :: ToJSON o => G.Room Handler i o -> Handler TypedContent
-join room = do
-  c <- G.subscribeC room
-  repEventSource $ const (c .| C.mapC toServerEvent)
+join :: (ToJSON o, Monad m) => G.Room m i o -> m (C.ConduitT () ServerEvent m ())
+join G.Room {G.output = out} = (.| C.mapC toServerEvent) <$> out
 
 postCreateGameR :: Handler TypedContent
+-- postCreateGameR = undefined
 postCreateGameR = do
-  room <- G.createRoom Cn.counterGame (0, 1)
+  room@G.Room {G.startGame = start} <- G.createRoom $ Cn.counterGame 0 1
   id <- H.create room
   _ <- log $ "Created game on room " ++ show id
-  join room
+  (join room >>= repEventSource . const) <* start
+
+postFasterR :: GameId -> Handler TypedContent
+postFasterR id = do
+  G.Room {input = input} <- H.read id
+  _ <- input Cn.Faster
+  _ <- log $ "Faster " ++ show id
+  sendResponse ()
+
+postSlowerR :: GameId -> Handler TypedContent
+postSlowerR id = do
+  G.Room {input = input} <- H.read id
+  _ <- input Cn.Slower
+  _ <- log $ "Slower " ++ show id
+  sendResponse ()
+
+postResetR :: GameId -> Handler TypedContent
+postResetR id = do
+  G.Room {input = input} <- H.read id
+  _ <- input $ Cn.Reset 0
+  _ <- log $ "Slower " ++ show id
+  sendResponse ()
 
 -- postJoinGameR :: GameId -> Handler TypedContent
 -- postJoinGameR id = undefined
@@ -93,7 +116,7 @@ postJoinGameR :: GameId -> Handler TypedContent
 postJoinGameR id = do
   room <- H.read id
   _ <- log $ "Joined room " ++ show id
-  join room
+  join room >>= repEventSource . const
 
 main :: IO ()
 main = do
