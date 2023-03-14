@@ -12,9 +12,9 @@ build-type:     Simple
 library
   exposed-modules:
       Counter
-      Game
       Host
       RockPaperScissors
+      Room
       TicTacToe
   other-modules:
       Paths_small_games

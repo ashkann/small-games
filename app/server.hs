@@ -20,9 +20,9 @@ import Data.Binary.Builder qualified as B
 import Data.ByteString.Lazy.Char8 qualified as L
 import Data.Map qualified as M
 import Data.Text qualified as T
-import Game qualified as G
 import Host qualified as H
 import Network.Wai.EventSource.EventStream
+import Room qualified as R
 import Yesod.Core
 import Yesod.EventSource
 import Prelude hiding (id, log, read)
@@ -38,9 +38,7 @@ instance PathPiece GameId where
         | otherwise -> Just $ GameId i
       _ -> Nothing
 
-newtype App = App {rooms :: TVar (M.Map Int (G.Room (HandlerFor App) Cn.Input Cn.Output))}
-
--- newtype App = App Int
+newtype App = App {rooms :: TVar (M.Map Int (R.Room Cn.Input Cn.Output))}
 
 mkYesod
   "App"
@@ -52,13 +50,13 @@ mkYesod
     /#GameId/reset ResetR POST
 |]
 
-app :: H.InMemory Int (G.Room Handler Cn.Input Cn.Output) a -> Handler a
+app :: H.InMemory Int (R.Room Cn.Input Cn.Output) a -> Handler a
 app (H.InMemory run) = getYesod >>= (liftIO . atomically . run . rooms)
 
 log :: String -> Handler ()
 log msg = $(logDebug) (T.pack msg)
 
-instance H.Host Handler GameId (G.Room Handler Cn.Input Cn.Output) where
+instance H.Host Handler GameId (R.Room Cn.Input Cn.Output) where
   create r = GameId <$> (app . H.create) r
   read (GameId id) = app $ H.read id
   write (GameId id) r = app $ H.write id r
@@ -77,40 +75,39 @@ toServerEvent a =
       eventData = [B.putStringUtf8 $ L.unpack (encode a)]
     }
 
-join :: (ToJSON o, Monad m) => G.Room m i o -> m (C.ConduitT () ServerEvent m ())
-join G.Room {G.output = out} = (.| C.mapC toServerEvent) <$> out
+join :: (ToJSON o, MonadIO m) => R.Room i o -> m (C.ConduitT () ServerEvent m ())
+join room = (.| C.mapC toServerEvent) <$> R.joinRoom room
 
 postCreateGameR :: Handler TypedContent
 -- postCreateGameR = undefined
 postCreateGameR = do
-  room@G.Room {G.startGame = start} <- G.createRoom $ Cn.counterGame 0 1
+  room <- R.createRoom
   id <- H.create room
-  _ <- log $ "Created game on room " ++ show id
-  (join room >>= repEventSource . const) <* start
+  out <- join room
+  _ <- R.hostGame room $ Cn.counterGame 0 1
+  _ <- log $ "Created room " ++ show id
+  repEventSource . const $ out
 
 postFasterR :: GameId -> Handler TypedContent
 postFasterR id = do
-  G.Room {input = input} <- H.read id
-  _ <- input Cn.Faster
+  room <- H.read id
+  _ <- R.writeRoom room Cn.Faster
   _ <- log $ "Faster " ++ show id
   sendResponse ()
 
 postSlowerR :: GameId -> Handler TypedContent
 postSlowerR id = do
-  G.Room {input = input} <- H.read id
-  _ <- input Cn.Slower
+  room <- H.read id
+  _ <- R.writeRoom room Cn.Slower
   _ <- log $ "Slower " ++ show id
   sendResponse ()
 
 postResetR :: GameId -> Handler TypedContent
 postResetR id = do
-  G.Room {input = input} <- H.read id
-  _ <- input $ Cn.Reset 0
+  room <- H.read id
+  _ <- R.writeRoom room $ Cn.Reset 0
   _ <- log $ "Slower " ++ show id
   sendResponse ()
-
--- postJoinGameR :: GameId -> Handler TypedContent
--- postJoinGameR id = undefined
 
 postJoinGameR :: GameId -> Handler TypedContent
 postJoinGameR id = do
@@ -122,5 +119,3 @@ main :: IO ()
 main = do
   rooms <- newTVarIO M.empty
   warp 3000 $ App rooms
-
--- main = putStrLn " Okay"
