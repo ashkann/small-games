@@ -1,11 +1,12 @@
+{-# LANGUAGE  FlexibleInstances  #-}
+{-# LANGUAGE  MultiParamTypeClasses  #-}
+{-# LANGUAGE  UndecidableInstances  #-}
+
 module Room
   ( Room,
     Game,
-    createRoom,
-    writeRoom,
-    joinRoom,
-    hostGame,
-    createGame
+    MonadRoom(..),
+    createGame,
   )
 where
 
@@ -13,26 +14,29 @@ import Conduit (ConduitT, repeatMC)
 import Control.Concurrent.STM
 import Control.Monad.IO.Class (MonadIO, liftIO)
 
-newtype Game m i o = Game {create :: TChan i -> TChan o -> m ()}
+newtype Game m i o = Game {run :: TChan i -> TChan o -> m ()}
 
 data Room i o = Room {ichan :: TChan i, ochan :: TChan o}
 
-createRoom :: MonadIO m => m (Room i o)
-createRoom = do
-  ochan <- liftIO newBroadcastTChanIO
-  ichan <- liftIO newTChanIO
-  return $ Room {ichan = ichan, ochan = ochan}
+class MonadRoom m where
+  create :: m (Room i o)
+  write :: Room i o -> i -> m ()
+  join :: Room i o -> m (ConduitT () o m ())
+  host :: Room i o -> Game m i o -> m ()
 
-writeRoom :: MonadIO m => Room i o -> i -> m ()
-writeRoom Room {ichan = ichan} i = liftIO . atomically $ writeTChan ichan i
+instance MonadIO m => MonadRoom m where
+  create = do
+    ochan <- liftIO newBroadcastTChanIO
+    ichan <- liftIO newTChanIO
+    return $ Room {ichan = ichan, ochan = ochan}
 
-joinRoom :: MonadIO m => Room i o -> m (ConduitT () o m ())
-joinRoom Room {ochan = ochan} = do
-  ch <- liftIO . atomically $ dupTChan ochan
-  return $ repeatMC (liftIO . atomically $ readTChan ch)
+  write Room {ichan = ichan} i = liftIO . atomically $ writeTChan ichan i
 
-hostGame :: Room i o -> Game m i o -> m ()
-hostGame Room {ichan = ichan, ochan = ochan} Game {create = create} = create ichan ochan
+  join Room {ochan = ochan} = do
+    ch <- liftIO . atomically $ dupTChan ochan
+    return $ repeatMC (liftIO . atomically $ readTChan ch)
+
+  host Room {ichan = ichan, ochan = ochan} Game {run = run} = run ichan ochan
 
 createGame :: (TChan i -> TChan o -> m ()) -> Game m i o
-createGame f = Game {create = f}
+createGame f = Game {run = f}

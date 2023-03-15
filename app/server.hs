@@ -76,36 +76,36 @@ toServerEvent a =
     }
 
 join :: (ToJSON o, MonadIO m) => R.Room i o -> m (C.ConduitT () ServerEvent m ())
-join room = (.| C.mapC toServerEvent) <$> R.joinRoom room
+join room = (.| C.mapC toServerEvent) <$> R.join room
 
 postCreateGameR :: Handler TypedContent
 -- postCreateGameR = undefined
 postCreateGameR = do
-  room <- R.createRoom
+  room <- R.create
   id <- H.create room
   out <- join room
-  _ <- R.hostGame room $ Cn.counterGame 0 1
+  _ <- R.host room $ Cn.counterGame 0 1
   _ <- log $ "Created room " ++ show id
   repEventSource . const $ out
 
 postFasterR :: GameId -> Handler TypedContent
 postFasterR id = do
   room <- H.read id
-  _ <- R.writeRoom room Cn.Faster
+  _ <- R.write room Cn.Faster
   _ <- log $ "Faster " ++ show id
   sendResponse ()
 
 postSlowerR :: GameId -> Handler TypedContent
 postSlowerR id = do
   room <- H.read id
-  _ <- R.writeRoom room Cn.Slower
+  _ <- R.write room Cn.Slower
   _ <- log $ "Slower " ++ show id
   sendResponse ()
 
 postResetR :: GameId -> Handler TypedContent
 postResetR id = do
   room <- H.read id
-  _ <- R.writeRoom room $ Cn.Reset 0
+  _ <- R.write room $ Cn.Reset 0
   _ <- log $ "Slower " ++ show id
   sendResponse ()
 
