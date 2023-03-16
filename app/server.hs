@@ -14,6 +14,7 @@
 import Conduit ((.|))
 import Conduit qualified as C
 import Control.Concurrent.STM
+import Control.Monad.Reader (ReaderT (runReaderT))
 import Counter qualified as Cn
 import Data.Aeson
 import Data.Binary.Builder qualified as B
@@ -26,7 +27,7 @@ import Room qualified as R
 import Yesod.Core
 import Yesod.EventSource
 import Prelude hiding (id, log, read)
-import TicTacToe qualified as T3
+import Control.Concurrent (forkIO)
 
 newtype GameId = GameId Int deriving (Eq, Show, Read)
 
@@ -45,7 +46,6 @@ mkYesod
   "App"
   [parseRoutes|
     /create CreateGameR POST
-    /create2 CreateGame2R POST
     /#GameId/join JoinGameR POST
     /#GameId/faster FasterR POST
     /#GameId/slower SlowerR POST
@@ -85,16 +85,7 @@ postCreateGameR = do
   room <- R.create
   id <- H.create room
   out <- join room
-  _ <- R.host room $ Cn.counterGame 0 1
-  _ <- log $ "Created room " ++ show id
-  repEventSource . const $ out
-
-postCreateGame2R :: Handler TypedContent
-postCreateGame2R = do
-  room <- R.create
-  id <- H.create room
-  out <- join room
-  _ <- R.host room $ Cn.counterGame 0 1
+  _ <- liftIO . forkIO $ runReaderT (R.runRoomT (Cn.mkGame 0 1)) room
   _ <- log $ "Created room " ++ show id
   repEventSource . const $ out
 

@@ -1,10 +1,16 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module TicTacToe where
 
+import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import qualified Data.Map as M
-import Control.Concurrent (forkIO)
+import Data.Map qualified as M
+import Game qualified as G
+import Prelude hiding (read)
 
 data Index = I1 | I2 | I3 deriving (Eq, Ord)
 
@@ -59,6 +65,26 @@ input (Mark p pos) b = (b', winner)
       (Just p', Just p2, Just p3) | p' == p2 && p' == p3 -> Just p'
       _ -> check rs
     check _ = Nothing
+
+mkGame2 :: (Monad m, G.Read m Input, G.Write m Output) => m ()
+mkGame2 = go emptyBoard
+  where
+    go board = do
+      i <- G.read
+      _ <- G.write $ marked i
+      case step i board of
+        (_, w@(Just _)) -> G.write (Finished w)
+        (b', Nothing) -> go b'
+
+    marked (Mark p pos) = Marked p pos
+
+    step (Mark p pos) b = (b', winner rows)
+      where
+        b' = mark pos p b
+        winner (r : rs) = case row r b' of
+          (Just p', Just p2, Just p3) | p' == p2 && p' == p3 -> Just p'
+          _ -> winner rs
+        winner [] = Nothing
 
 mkGame :: MonadIO m => TChan Input -> TChan Output -> m ()
 mkGame ichan ochan = void . liftIO . forkIO $ go emptyBoard
