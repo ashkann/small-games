@@ -1,9 +1,9 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Room
   ( Room,
@@ -15,22 +15,35 @@ where
 import Conduit (ConduitT, repeatMC)
 import Control.Concurrent.STM
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader (ReaderT (..))
+import Control.Monad.Reader (MonadReader (ask), ReaderT (..))
 import Game qualified as G
 import Prelude hiding (read)
 
 data Room i o = Room {ichan :: TChan i, ochan :: TChan o}
 
-newtype RoomT i o a = RoomT {runRoomT :: ReaderT (Room i o) IO a} deriving (Functor, Applicative, Monad, MonadIO)
+newtype RoomT m i o a = RoomT {runRoomT :: ReaderT (Room i o) m a}
+  deriving
+    ( Functor,
+      Applicative,
+      Monad,
+      MonadIO,
+      MonadReader (Room i o)
+    )
 
-instance G.Write (RoomT i o) o where
-  write o = RoomT . ReaderT $ \Room {ochan = ochan} -> atomically $ writeTChan ochan o
+instance MonadIO m => G.Write (RoomT m i o) o where
+  write o = do
+    Room {ochan = ochan} <- ask
+    liftIO . atomically $ writeTChan ochan o
 
-instance G.Read (RoomT i o) i where
-  read = RoomT . ReaderT $ \Room {ichan = ichan} -> atomically $ readTChan ichan
+instance MonadIO m => G.Read (RoomT m i o) i where
+  read = do
+    Room {ichan = ichan} <- ask
+    liftIO . atomically $ readTChan ichan
 
-instance G.TryRead (RoomT i o) i where
-  tryRead = RoomT . ReaderT $ \Room {ichan = ichan} -> atomically $ tryReadTChan ichan
+instance MonadIO m => G.TryRead (RoomT m i o) i where
+  tryRead = do
+    Room {ichan = ichan} <- ask
+    liftIO . atomically $ tryReadTChan ichan
 
 class MonadRoom m where
   create :: m (Room i o)

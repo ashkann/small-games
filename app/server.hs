@@ -13,6 +13,7 @@
 
 import Conduit ((.|))
 import Conduit qualified as C
+import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
 import Control.Monad.Reader (ReaderT (runReaderT))
 import Counter qualified as Cn
@@ -27,7 +28,6 @@ import Room qualified as R
 import Yesod.Core
 import Yesod.EventSource
 import Prelude hiding (id, log, read)
-import Control.Concurrent (forkIO)
 
 newtype GameId = GameId Int deriving (Eq, Show, Read)
 
@@ -85,7 +85,7 @@ postCreateGameR = do
   room <- R.create
   id <- H.create room
   out <- join room
-  _ <- liftIO . forkIO $ runReaderT (R.runRoomT (Cn.mkGame 0 1)) room
+  _ <- liftIO . forkIO $ (runReaderT . R.runRoomT) (Cn.mkGame 0 1) room
   _ <- log $ "Created room " ++ show id
   repEventSource . const $ out
 
