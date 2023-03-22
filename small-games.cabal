@@ -32,6 +32,38 @@ library
     , conduit
     , conduit-extra
     , containers
+    , gloss
+    , http-conduit
+    , mtl
+    , random
+    , resourcet
+    , stm
+    , text
+    , uuid
+    , vty
+    , wai-extra
+    , yesod-core
+    , yesod-eventsource
+  default-language: Haskell2010
+
+executable gloss-client
+  main-is: gloss-client.hs
+  other-modules:
+      Paths_small_games
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
+  build-depends:
+      aeson
+    , attoparsec
+    , base >=4.7 && <5
+    , binary
+    , brick
+    , bytestring
+    , conduit
+    , conduit-extra
+    , containers
+    , gloss
     , http-conduit
     , mtl
     , random
@@ -62,6 +94,7 @@ executable rock-paper-scissors
     , conduit
     , conduit-extra
     , containers
+    , gloss
     , http-conduit
     , mtl
     , random
@@ -93,6 +126,7 @@ executable server
     , conduit
     , conduit-extra
     , containers
+    , gloss
     , http-conduit
     , mtl
     , random
@@ -124,6 +158,7 @@ executable tic-tac-toe
     , conduit
     , conduit-extra
     , containers
+    , gloss
     , http-conduit
     , mtl
     , random
@@ -155,6 +190,7 @@ executable tui-client
     , conduit
     , conduit-extra
     , containers
+    , gloss
     , http-conduit
     , mtl
     , random

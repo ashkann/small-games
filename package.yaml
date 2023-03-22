@@ -22,6 +22,7 @@ dependencies:
   - resourcet
   - attoparsec
   - mtl
+  - gloss
 
 ghc-options:
   - -Wall
@@ -62,3 +63,7 @@ executables:
     source-dirs: app
     # dependencies:
     #   - small-games
+
+  gloss-client:
+    main: gloss-client.hs
+    source-dirs: app
