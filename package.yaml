@@ -67,3 +67,5 @@ executables:
   gloss-client:
     main: gloss-client.hs
     source-dirs: app
+    dependencies:
+      - small-games

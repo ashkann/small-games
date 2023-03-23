@@ -1,51 +1,81 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 
+import Data.Map qualified as M
+-- import Debug.Trace (trace)
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game
+import TicTacToe qualified as T3
 
-data I = I1 | I2 | I3
-
-newtype World = World {pointer :: Point}
+data World = World
+  { pointer :: Point,
+    board :: T3.Board,
+    player :: Maybe T3.Player
+  }
 
 main :: IO ()
-main = play d backgroundColor 1 (World {pointer = (0, 0)}) draw event (const id)
+main = play d backgroundColor 1 emptyWorld draw event (const id)
   where
+    emptyWorld = World {pointer = (0, 0), board = T3.emptyBoard, player = Just T3.O}
     d = InWindow "Tic-Tac-Toe" (size, size) (100, 100)
     size = 500 :: Int
     backgroundColor = makeColor 0 0 0 0
-    board =
+    gridColor = makeColor 1 1 1 1
+    margin = 20
+    padding = 10
+    cw = fromIntegral $ (size - 2 * margin) `div` 6
+    end = fromIntegral $ size `div` 2 - margin
+    cw2 = fromIntegral $ (size - 2 * margin) `div` 3
+    hline = color gridColor $ line [(-end, 0), (end, 0)]
+    vline = color gridColor $ line [(0, -end), (0, end)]
+    xColor = makeColor 1 0 0 1
+    oColor = makeColor 0 0 1 1
+    cell r c = row . col
+      where
+        row = translate 0 $ move r
+        col = translate (move c) 0
+    move = \case
+      T3.I1 -> -cw2
+      T3.I2 -> 0
+      T3.I3 -> cw2
+    -- Event handling
+    event ev w
+      | Just (x, y) <- clicked, World {player = Just p, board = b} <- w = w {board = T3.mark (toPos x y) p b}
+      | pressedX = w {player = Just T3.X}
+      | pressedO = w {player = Just T3.O}
+      | (EventMotion point) <- ev = w {pointer = point}
+      | otherwise = w
+      where
+        pressedX
+          | EventKey (Char 'x') Down (Modifiers Up Up Up) _ <- ev = True
+          | otherwise = False
+        pressedO
+          | EventKey (Char 'o') Down (Modifiers Up Up Up) _ <- ev = True
+          | otherwise = False
+        clicked
+          | EventKey (MouseButton LeftButton) Down (Modifiers Up Up Up) (x, y) <- ev = Just (x, y)
+          | otherwise = Nothing
+        toPos x y = (toIndex y, toIndex x)
+          where
+            toIndex x
+              | x <= -cw = T3.I1
+              | x <= cw = T3.I2
+              | otherwise = T3.I3
+    -- Drawing the game
+    draw World {pointer = (x, y), board = board} =
       Pictures
         [ translate 0 (-cw) hline,
           translate 0 cw hline,
           translate (-cw) 0 vline,
           translate cw 0 vline,
-          drawX I1 I2,
-          drawO I2 I2
+          color gridColor $ translate x y $ circle 5,
+          drawBoard board
         ]
-    c1 = makeColor 1 1 1 1
-    margin = 20
-    padding = 10
-    cw = fromIntegral $ (size - 2 * margin) `div` 6
-    end = fromIntegral $ size `div` 2 - margin
-    hline = color c1 $ line [(-end, 0), (end, 0)]
-    vline = color c1 $ line [(0, -end), (0, end)]
-    x = let a = cw - padding in Pictures [line [(-a, a), (a, -a)], line [(-a, -a), (a, a)]]
-    o = circle $ cw - padding
-    xColor = makeColor 1 0 0 1
-    oColor = makeColor 0 0 1 1
-    drawX r c = cell r c $ color xColor x
-    drawO r c = cell r c $ color oColor o
-    cell r c = row . col
       where
-        row = translate 0 $ move r
-        col = translate (move c) 0
-    move =
-      let cw2 = fromIntegral $ (size - 2 * margin) `div` 3
-       in \case
-            I1 -> -cw2
-            I2 -> 0
-            I3 -> cw2
-    event (EventKey (MouseButton LeftButton) Down (Modifiers Up Up Up) (x, y)) w = w
-    event (EventMotion (x, y)) w = World {pointer = (x, y)}
-    event _ w = w
-    draw World {pointer = (x, y)} = color c1 $ translate x y $ circle 5
+        drawBoard b = Pictures $ map drawCell $ M.toList b
+        drawCell ((r, c), p) = cell r c $ maybe Blank drawPlayer p
+        drawPlayer = \case
+          T3.X -> color xColor drawX
+          T3.O -> color oColor drawO
+        drawX = let a = cw - padding in Pictures [line [(-a, a), (a, -a)], line [(-a, -a), (a, a)]]
+        drawO = circle $ cw - padding

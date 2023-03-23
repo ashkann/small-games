@@ -68,6 +68,7 @@ executable gloss-client
     , mtl
     , random
     , resourcet
+    , small-games
     , stm
     , text
     , uuid
