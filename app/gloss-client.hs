@@ -21,6 +21,9 @@ main = play d backgroundColor 1 emptyWorld draw event (const id)
     size = 500 :: Int
     backgroundColor = makeColor 0 0 0 0
     gridColor = makeColor 1 1 1 1
+    pointerColor = makeColor 1 1 1 0.2
+    xColor = makeColor 1 0 0 1
+    oColor = makeColor 0 0 1 1
     margin = 20
     padding = 10
     cw = fromIntegral $ (size - 2 * margin) `div` 6
@@ -28,8 +31,6 @@ main = play d backgroundColor 1 emptyWorld draw event (const id)
     cw2 = fromIntegral $ (size - 2 * margin) `div` 3
     hline = color gridColor $ line [(-end, 0), (end, 0)]
     vline = color gridColor $ line [(0, -end), (0, end)]
-    xColor = makeColor 1 0 0 1
-    oColor = makeColor 0 0 1 1
     cell r c = row . col
       where
         row = translate 0 $ move r
@@ -55,27 +56,28 @@ main = play d backgroundColor 1 emptyWorld draw event (const id)
         clicked
           | EventKey (MouseButton LeftButton) Down (Modifiers Up Up Up) (x, y) <- ev = Just (x, y)
           | otherwise = Nothing
-        toPos x y = (toIndex y, toIndex x)
-          where
-            toIndex x
-              | x <= -cw = T3.I1
-              | x <= cw = T3.I2
-              | otherwise = T3.I3
     -- Drawing the game
-    draw World {pointer = (x, y), board = board} =
-      Pictures
-        [ translate 0 (-cw) hline,
-          translate 0 cw hline,
-          translate (-cw) 0 vline,
-          translate cw 0 vline,
-          color gridColor $ translate x y $ circle 5,
-          drawBoard board
-        ]
+    draw World {pointer = (x, y), board = board} = Pictures [drawGrid, drawBoard, drawPointer]
       where
-        drawBoard b = Pictures $ map drawCell $ M.toList b
+        drawGrid =
+          Pictures
+            [ translate 0 (-cw) hline,
+              translate 0 cw hline,
+              translate (-cw) 0 vline,
+              translate cw 0 vline
+            ]
+        drawPointer = color pointerColor $ uncurry cell (toPos x y) $ rectangleSolid 100 100
+        drawBoard = Pictures $ map drawCell $ M.toList board
         drawCell ((r, c), p) = cell r c $ maybe Blank drawPlayer p
         drawPlayer = \case
           T3.X -> color xColor drawX
           T3.O -> color oColor drawO
-        drawX = let a = cw - padding in Pictures [line [(-a, a), (a, -a)], line [(-a, -a), (a, a)]]
-        drawO = circle $ cw - padding
+          where
+            drawX = let a = cw - padding in Pictures [line [(-a, a), (a, -a)], line [(-a, -a), (a, a)]]
+            drawO = circle $ cw - padding
+    toPos x y = (toIndex y, toIndex x)
+      where
+        toIndex cord
+          | cord <= -cw = T3.I1
+          | cord <= cw = T3.I2
+          | otherwise = T3.I3

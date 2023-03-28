@@ -23,6 +23,11 @@ dependencies:
   - attoparsec
   - mtl
   - gloss
+  - sdl2
+  - linear
+  - dear-imgui
+  - StateVar
+  - managed
 
 ghc-options:
   - -Wall
@@ -69,3 +74,19 @@ executables:
     source-dirs: app
     dependencies:
       - small-games
+
+  sdl-client:
+    main: sdl-client.hs
+    source-dirs: app
+    
+  kazem:
+    main: kazem.hs
+    source-dirs: app
+    
+  ashkan:
+    main: ashkan.hs
+    source-dirs: app
+    
+  vulkan-client:
+    main: vulkan-client.hs
+    source-dirs: app

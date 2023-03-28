@@ -23,7 +23,8 @@ library
       lib
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
   build-depends:
-      aeson
+      StateVar
+    , aeson
     , attoparsec
     , base >=4.7 && <5
     , binary
@@ -32,11 +33,51 @@ library
     , conduit
     , conduit-extra
     , containers
+    , dear-imgui
     , gloss
     , http-conduit
+    , linear
+    , managed
     , mtl
     , random
     , resourcet
+    , sdl2
+    , stm
+    , text
+    , uuid
+    , vty
+    , wai-extra
+    , yesod-core
+    , yesod-eventsource
+  default-language: Haskell2010
+
+executable ashkan
+  main-is: ashkan.hs
+  other-modules:
+      Paths_small_games
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
+  build-depends:
+      StateVar
+    , aeson
+    , attoparsec
+    , base >=4.7 && <5
+    , binary
+    , brick
+    , bytestring
+    , conduit
+    , conduit-extra
+    , containers
+    , dear-imgui
+    , gloss
+    , http-conduit
+    , linear
+    , managed
+    , mtl
+    , random
+    , resourcet
+    , sdl2
     , stm
     , text
     , uuid
@@ -54,7 +95,8 @@ executable gloss-client
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
   build-depends:
-      aeson
+      StateVar
+    , aeson
     , attoparsec
     , base >=4.7 && <5
     , binary
@@ -63,12 +105,52 @@ executable gloss-client
     , conduit
     , conduit-extra
     , containers
+    , dear-imgui
     , gloss
     , http-conduit
+    , linear
+    , managed
     , mtl
     , random
     , resourcet
+    , sdl2
     , small-games
+    , stm
+    , text
+    , uuid
+    , vty
+    , wai-extra
+    , yesod-core
+    , yesod-eventsource
+  default-language: Haskell2010
+
+executable kazem
+  main-is: kazem.hs
+  other-modules:
+      Paths_small_games
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
+  build-depends:
+      StateVar
+    , aeson
+    , attoparsec
+    , base >=4.7 && <5
+    , binary
+    , brick
+    , bytestring
+    , conduit
+    , conduit-extra
+    , containers
+    , dear-imgui
+    , gloss
+    , http-conduit
+    , linear
+    , managed
+    , mtl
+    , random
+    , resourcet
+    , sdl2
     , stm
     , text
     , uuid
@@ -86,7 +168,8 @@ executable rock-paper-scissors
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
   build-depends:
-      aeson
+      StateVar
+    , aeson
     , attoparsec
     , base >=4.7 && <5
     , binary
@@ -95,12 +178,52 @@ executable rock-paper-scissors
     , conduit
     , conduit-extra
     , containers
+    , dear-imgui
     , gloss
     , http-conduit
+    , linear
+    , managed
     , mtl
     , random
     , resourcet
+    , sdl2
     , small-games
+    , stm
+    , text
+    , uuid
+    , vty
+    , wai-extra
+    , yesod-core
+    , yesod-eventsource
+  default-language: Haskell2010
+
+executable sdl-client
+  main-is: sdl-client.hs
+  other-modules:
+      Paths_small_games
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
+  build-depends:
+      StateVar
+    , aeson
+    , attoparsec
+    , base >=4.7 && <5
+    , binary
+    , brick
+    , bytestring
+    , conduit
+    , conduit-extra
+    , containers
+    , dear-imgui
+    , gloss
+    , http-conduit
+    , linear
+    , managed
+    , mtl
+    , random
+    , resourcet
+    , sdl2
     , stm
     , text
     , uuid
@@ -118,7 +241,8 @@ executable server
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
   build-depends:
-      aeson
+      StateVar
+    , aeson
     , attoparsec
     , base >=4.7 && <5
     , binary
@@ -127,11 +251,15 @@ executable server
     , conduit
     , conduit-extra
     , containers
+    , dear-imgui
     , gloss
     , http-conduit
+    , linear
+    , managed
     , mtl
     , random
     , resourcet
+    , sdl2
     , small-games
     , stm
     , text
@@ -150,7 +278,8 @@ executable tic-tac-toe
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
   build-depends:
-      aeson
+      StateVar
+    , aeson
     , attoparsec
     , base >=4.7 && <5
     , binary
@@ -159,11 +288,15 @@ executable tic-tac-toe
     , conduit
     , conduit-extra
     , containers
+    , dear-imgui
     , gloss
     , http-conduit
+    , linear
+    , managed
     , mtl
     , random
     , resourcet
+    , sdl2
     , small-games
     , stm
     , text
@@ -182,7 +315,8 @@ executable tui-client
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
   build-depends:
-      aeson
+      StateVar
+    , aeson
     , attoparsec
     , base >=4.7 && <5
     , binary
@@ -191,11 +325,51 @@ executable tui-client
     , conduit
     , conduit-extra
     , containers
+    , dear-imgui
     , gloss
     , http-conduit
+    , linear
+    , managed
     , mtl
     , random
     , resourcet
+    , sdl2
+    , stm
+    , text
+    , uuid
+    , vty
+    , wai-extra
+    , yesod-core
+    , yesod-eventsource
+  default-language: Haskell2010
+
+executable vulkan-client
+  main-is: vulkan-client.hs
+  other-modules:
+      Paths_small_games
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
+  build-depends:
+      StateVar
+    , aeson
+    , attoparsec
+    , base >=4.7 && <5
+    , binary
+    , brick
+    , bytestring
+    , conduit
+    , conduit-extra
+    , containers
+    , dear-imgui
+    , gloss
+    , http-conduit
+    , linear
+    , managed
+    , mtl
+    , random
+    , resourcet
+    , sdl2
     , stm
     , text
     , uuid
