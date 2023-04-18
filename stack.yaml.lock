@@ -11,6 +11,13 @@ packages:
       size: 5269
   original:
     hackage: dear-imgui-2.1.3
+- completed:
+    hackage: vulkan-3.24.5@sha256:9e11572d2dfc43bd22a9c477b79494c884d3e94aad170088c08a32d695f46000,31913
+    pantry-tree:
+      sha256: db052d548bc83a3f6484c0bcda88561f43b78244a79ed7c35aca9747c7c1e242
+      size: 86973
+  original:
+    hackage: vulkan-3.24.5
 snapshots:
 - completed:
     sha256: adbc602422dde10cc330175da7de8609e70afc41449a7e2d6e8b1827aa0e5008
