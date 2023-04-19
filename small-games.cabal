@@ -44,7 +44,9 @@ library
     , stm
     , text
     , uuid
+    , vector
     , vulkan
+    , vulkan-utils
     , wai-extra
     , yesod-core
     , yesod-eventsource
@@ -80,7 +82,9 @@ executable gloss-client
     , stm
     , text
     , uuid
+    , vector
     , vulkan
+    , vulkan-utils
     , wai-extra
     , yesod-core
     , yesod-eventsource
@@ -115,7 +119,9 @@ executable vulkan-client
     , stm
     , text
     , uuid
+    , vector
     , vulkan
+    , vulkan-utils
     , wai-extra
     , yesod-core
     , yesod-eventsource

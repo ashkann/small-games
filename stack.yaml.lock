@@ -18,6 +18,13 @@ packages:
       size: 86973
   original:
     hackage: vulkan-3.24.5
+- completed:
+    hackage: vulkan-utils-0.5.10.2@sha256:bbc0bbd585218a4b2eb7d1977824843ff6aeeca5f2273bb1befa2f3316303ced,3959
+    pantry-tree:
+      sha256: e1921f324cc0e2c9a4351d9cae91ba3ca3be5868275994b811e19d91b10bc71f
+      size: 2226
+  original:
+    hackage: vulkan-utils-0.5.10.2
 snapshots:
 - completed:
     sha256: adbc602422dde10cc330175da7de8609e70afc41449a7e2d6e8b1827aa0e5008

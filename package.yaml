@@ -4,6 +4,7 @@ maintainer: "ashkan.kh.nazary@gmail.com"
 dependencies:
   - base >= 4.7 && < 5
   - containers
+  - vector
   - wai-extra
   - yesod-core
   - yesod-eventsource
@@ -27,6 +28,7 @@ dependencies:
   - StateVar
   - managed
   - vulkan
+  - vulkan-utils
 
 ghc-options:
   - -Wall
