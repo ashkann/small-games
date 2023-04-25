@@ -43,6 +43,7 @@ library
     , sdl2
     , stm
     , text
+    , transformers
     , uuid
     , vector
     , vulkan
@@ -81,6 +82,7 @@ executable gloss-client
     , small-games
     , stm
     , text
+    , transformers
     , uuid
     , vector
     , vulkan
@@ -118,6 +120,7 @@ executable vulkan-client
     , sdl2
     , stm
     , text
+    , transformers
     , uuid
     , vector
     , vulkan

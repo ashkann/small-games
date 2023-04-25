@@ -5,6 +5,7 @@ dependencies:
   - base >= 4.7 && < 5
   - containers
   - vector
+  - transformers
   - wai-extra
   - yesod-core
   - yesod-eventsource
