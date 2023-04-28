@@ -27,7 +27,6 @@ library
     , attoparsec
     , base >=4.7 && <5
     , binary
-    , brick
     , bytestring
     , conduit
     , conduit-extra
@@ -40,7 +39,6 @@ library
     , stm
     , text
     , uuid
-    , vty
     , wai-extra
     , yesod-core
     , yesod-eventsource
@@ -58,7 +56,6 @@ executable gloss-client
     , attoparsec
     , base >=4.7 && <5
     , binary
-    , brick
     , bytestring
     , conduit
     , conduit-extra
@@ -72,7 +69,6 @@ executable gloss-client
     , stm
     , text
     , uuid
-    , vty
     , wai-extra
     , yesod-core
     , yesod-eventsource
@@ -90,7 +86,6 @@ executable rock-paper-scissors
     , attoparsec
     , base >=4.7 && <5
     , binary
-    , brick
     , bytestring
     , conduit
     , conduit-extra
@@ -104,7 +99,6 @@ executable rock-paper-scissors
     , stm
     , text
     , uuid
-    , vty
     , wai-extra
     , yesod-core
     , yesod-eventsource
@@ -122,7 +116,6 @@ executable server
     , attoparsec
     , base >=4.7 && <5
     , binary
-    , brick
     , bytestring
     , conduit
     , conduit-extra
@@ -136,7 +129,6 @@ executable server
     , stm
     , text
     , uuid
-    , vty
     , wai-extra
     , yesod-core
     , yesod-eventsource
@@ -154,7 +146,6 @@ executable tic-tac-toe
     , attoparsec
     , base >=4.7 && <5
     , binary
-    , brick
     , bytestring
     , conduit
     , conduit-extra
@@ -168,38 +159,6 @@ executable tic-tac-toe
     , stm
     , text
     , uuid
-    , vty
-    , wai-extra
-    , yesod-core
-    , yesod-eventsource
-  default-language: Haskell2010
-
-executable tui-client
-  main-is: tui-client.hs
-  other-modules:
-      Paths_small_games
-  hs-source-dirs:
-      app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
-  build-depends:
-      aeson
-    , attoparsec
-    , base >=4.7 && <5
-    , binary
-    , brick
-    , bytestring
-    , conduit
-    , conduit-extra
-    , containers
-    , gloss
-    , http-conduit
-    , mtl
-    , random
-    , resourcet
-    , stm
-    , text
-    , uuid
-    , vty
     , wai-extra
     , yesod-core
     , yesod-eventsource
