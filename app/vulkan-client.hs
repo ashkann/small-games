@@ -101,9 +101,8 @@ main = runManaged $ do
              in zero
                   { surface = surface,
                     minImageCount = minImageCount (surfaceCaps :: SurfaceCapabilitiesKHR) + 1,
-                    -- imageFormat = (format :: SurfaceFormatKHR -> Format) surfaceFormat,
-                    imageFormat = f, -- FORMAT_B8G8R8_UNORM,
-                    imageColorSpace = c, -- COLOR_SPACE_SRGB_NONLINEAR_KHR,
+                    imageFormat = f,
+                    imageColorSpace = c,
                     imageExtent = extent,
                     imageArrayLayers = 1,
                     imageUsage = IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
