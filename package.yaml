@@ -63,8 +63,16 @@ executables:
   #   dependencies:
   #     - small-games
       
-  tetris-client:
-    main: tetris-client.hs
-    source-dirs: app
-    dependencies:
-      - small-games
+  # tetris-client:
+  #   main: tetris-client.hs
+  #   source-dirs: app
+  #   dependencies:
+  #     - small-games
+
+  minesweeper:
+    main:                Main.hs
+    source-dirs:         MineSweeper
+    
+  snake:
+    main:                Main.hs
+    source-dirs:         Snake  

@@ -45,12 +45,12 @@ library
     , yesod-eventsource
   default-language: Haskell2010
 
-executable tetris-client
-  main-is: tetris-client.hs
+executable minesweeper
+  main-is: Main.hs
   other-modules:
       Paths_small_games
   hs-source-dirs:
-      app
+      MineSweeper
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
   build-depends:
       aeson
@@ -67,7 +67,36 @@ executable tetris-client
     , mtl
     , random
     , resourcet
-    , small-games
+    , stm
+    , text
+    , uuid
+    , wai-extra
+    , yesod-core
+    , yesod-eventsource
+  default-language: Haskell2010
+
+executable snake
+  main-is: Main.hs
+  other-modules:
+      Paths_small_games
+  hs-source-dirs:
+      Snake
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
+  build-depends:
+      aeson
+    , array
+    , attoparsec
+    , base >=4.7 && <5
+    , binary
+    , bytestring
+    , conduit
+    , conduit-extra
+    , containers
+    , gloss
+    , http-conduit
+    , mtl
+    , random
+    , resourcet
     , stm
     , text
     , uuid
