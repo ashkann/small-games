@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
@@ -8,14 +9,14 @@ module Main (main) where
 
 import Data.Array.IArray (Array, Ix (..), array, assocs, (!), (//))
 import Debug.Trace (trace)
-import Graphics.Gloss.Interface.Pure.Game (Color, Display (InWindow), Event (EventKey), Key (MouseButton), KeyState (Down, Up), Modifiers (Modifiers), MouseButton (LeftButton, RightButton), Picture (Text), black, blank, blue, circle, color, cyan, green, greyN, line, makeColor, orange, pictures, play, rectangleSolid, rectangleWire, red, scale, translate, white, yellow)
+import Graphics.Gloss.Interface.Pure.Game (Color, Display (InWindow), Event (EventKey), Key (MouseButton), KeyState (Down, Up), Modifiers (Modifiers), MouseButton (LeftButton, RightButton), Picture (Text), black, blue, circle, color, cyan, green, greyN, line, makeColor, orange, pictures, play, rectangleSolid, rectangleWire, red, scale, translate, white, yellow)
 import Prelude hiding (Left, Right)
 
 data ScreenPos = ScreenPos Float Float deriving (Eq, Ord)
 
 data Count = Zero | One | Two | Three | Four | Five | Six | Seven | Eight deriving (Eq, Enum)
 
-data Cell = Flaged | Opened Count | UnOpened
+data Cell = Flaged | Opened Count | UnOpened deriving (Eq)
 
 data CellPos = CellPos Int Int deriving (Eq, Ord, Ix, Show)
 
@@ -33,17 +34,14 @@ world0 = World (Board clean) mines
 drawWorld :: World -> Picture
 drawWorld (World field _) = pictures [drawBoard field]
 
-drawCords :: Picture
-drawCords = color blue $ pictures [line [(0, 0), (0, fromIntegral windowHeight)], line [(0, 0), (fromIntegral windowWidth, 0)]]
-
 size :: (Real a) => a -> Float
-size x = realToFrac x * blockSize
+size x = realToFrac x * cellSize
 
 halfSize :: (Real a) => a -> Float
 halfSize x = size x / 2
 
 blocks :: Float -> Float
-blocks x = x / blockSize
+blocks x = x / cellSize
 
 screen2cell :: Float -> Float -> CellPos
 screen2cell x y =
@@ -53,21 +51,9 @@ screen2cell x y =
       cellY = floor $ blocks boardY
    in trace (show cellX ++ ", " ++ show cellY) (CellPos cellX cellY)
 
-boardWidth :: Int
-boardWidth = 6
-
-boardHeight :: Int
-boardHeight = 7
-
-drawBoard :: Board -> Picture
-drawBoard (Board field) = center $ pictures $ map (\(xy, cell) -> at xy $ drawCell cell) (assocs field)
-  where
-    at (CellPos x y) = translate (size x) (size y)
-    center = translate (negate . halfSize $ boardWidth - 1) (negate . halfSize $ boardHeight - 1)
-
 drawCell :: Cell -> Picture
 drawCell Flaged = pictures [square, flag] where flag = color red $ rectangleSolid 10 10
-drawCell (Opened c) = pictures [square, color (for c) (translate (-blockSize / 2 + 5) (-blockSize / 2 + 5) $ scale 0.2 0.2 $ pictures [circle 2.0, number c])]
+drawCell (Opened c) = pictures [square, color (for c) (translate (-cellSize / 2 + 5) (-cellSize / 2 + 5) $ scale 0.2 0.2 $ pictures [circle 2.0, number c])]
 drawCell UnOpened = square
 
 number :: Count -> Picture
@@ -95,25 +81,28 @@ for Eight = blue
 square :: Picture
 square = pictures [cell, border]
   where
-    cell = color (greyN 0.7) $ rectangleSolid blockSize blockSize
-    border = color white $ rectangleWire blockSize blockSize
+    cell = color (greyN 0.7) $ rectangleSolid cellSize cellSize
+    border = color white $ rectangleWire cellSize cellSize
 
 -- drawCell Hidden = color blue $ rectangleSolid 10 10 translate x y $ color white $ rectangleSolid 10 10
 
 update :: Float -> World -> World
 update _ w = w
 
-open :: CellPos -> [CellPos] -> Board -> Board
-open p mines (Board b) = Board $ b // go [] p
+open :: CellPos -> World -> World
+open p0 w@(World (Board b0) mines) = w {board = Board $ go b0 p0}
   where
-    go stop p =
-      if p `elem` stop
-        then []
-        else
+    go b p
+      | b ! p /= UnOpened = b
+      | otherwise = do
           let ps = neighbors p
               !_ = trace ("open " ++ show p) ()
               count = foldl (\c p -> if p `elem` mines then succ c else c) Zero ps
-           in (p, Opened count) : (if count == Zero then concatMap (go $ p : stop) ps else [])
+              b' = b // [(p, Opened count)]
+           in if count /= Zero then b' else foldl go b' ps
+
+isMine :: CellPos -> World -> Bool
+isMine p (World _ mines) = p `elem` mines
 
 flag :: CellPos -> Board -> Board
 flag pos (Board b) = Board $ b // change
@@ -151,10 +140,8 @@ neighbors (CellPos x y) =
 event :: Event -> World -> World
 event e w
   | Just (x, y) <- leftClicked,
-    Just pos <- insideBoard x y =
-      let World board mines = w
-          lost = world0
-       in if pos `elem` mines then lost else w {board = open pos mines board}
+    Just p <- insideBoard x y =
+      let lost = world0 in if isMine p w then lost else open p w
   | Just (x, y) <- rightClicked,
     Just pos <- insideBoard x y =
       let World board _ = w in w {board = flag pos board}
@@ -169,12 +156,28 @@ event e w
     rightClicked
       | Just (RightButton, xy) <- clicked = Just xy
       | otherwise = Nothing
-    insideBoard x y =
+
+boardWidth :: Int
+boardWidth = 9
+
+boardHeight :: Int
+boardHeight = 10
+
+drawBoard :: Board -> Picture
+drawBoard (Board b) = center $ pictures $ map (\(p, cell) -> at p $ drawCell cell) (assocs b)
+  where
+    at (CellPos x y) = translate (size x) (size y)
+    center = translate (negate . halfSize $ boardWidth - 1) (negate . halfSize $ boardHeight - 1)
+
+insideBoard :: Float -> Float -> Maybe CellPos
+insideBoard x y =
       let left = negate $ halfSize boardWidth
           right = halfSize boardWidth
           bottom = negate $ halfSize boardHeight
           top = halfSize boardHeight
        in if left <= x && x <= right && bottom <= y && y <= top then Just $ screen2cell x y else Nothing
+
+-- data Game = Game { }*
 
 windowWidth :: Int
 windowWidth = 500
@@ -182,8 +185,8 @@ windowWidth = 500
 windowHeight :: Int
 windowHeight = 500
 
-blockSize :: Float
-blockSize = 30
+cellSize :: Float
+cellSize = 30
 
 main :: IO ()
 main =
