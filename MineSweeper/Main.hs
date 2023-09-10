@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -50,17 +51,20 @@ data CellPos = CellPos Int Int deriving (Eq, Ord, Ix, Show)
 
 newtype Board = Board (Array CellPos Cell)
 
-data World = World {board :: Board, mines :: [CellPos]}
+data WorldState = Playing | Lost deriving (Eq)
+
+data World = World {board :: Board, mines :: [CellPos], state :: WorldState}
 
 world0 :: World
-world0 = World (Board clean) mines
+world0 = World (Board clean) mines Playing
   where
     bounds = let lower = CellPos 0 0; upper = CellPos (boardWidth - 1) (boardHeight - 1) in (lower, upper)
     clean = array bounds $ map (,UnOpened) (range bounds)
     mines = [CellPos 0 0, CellPos 0 1, CellPos 2 3, CellPos 3 3, CellPos 3 4, CellPos 4 4, CellPos 4 5, CellPos 5 5, CellPos 5 6]
 
 drawWorld :: MonadIO m => World -> m Picture
-drawWorld (World field _) = do restart <- drawRestart; return $ pictures [drawBoard field, restart]
+drawWorld (World b _ Playing) = do restart <- drawRestart Playing; return $ pictures [drawBoard b, restart]
+drawWorld (World b mines Lost) = do restart <- drawRestart Lost; return $ pictures [drawBoardLost mines b, restart]
 
 size :: (Real a) => a -> Float
 size x = realToFrac x * cellSize
@@ -107,25 +111,23 @@ for Seven = cyan
 for Eight = blue
 
 square :: Picture
-square = pictures [cell, border]
+square = pictures [cell, border white]
   where
     cell = color (greyN 0.7) $ rectangleSolid cellSize cellSize
-    border = color white $ rectangleWire cellSize cellSize
+
+border :: Color -> Picture
+border c = color c $ rectangleWire cellSize cellSize
 
 open :: CellPos -> World -> World
-open p0 w@(World (Board b0) mines) = w {board = Board $ go b0 p0}
+open p0 w@(World (Board b0) mines _) = w {board = Board $ go b0 p0}
   where
     go b p
       | b ! p /= UnOpened = b
       | otherwise = do
           let ps = neighbors p
-              -- !_ = trace ("open " ++ show p) ()
               count = foldl (\c p -> if p `elem` mines then succ c else c) Zero ps
               b' = b // [(p, Opened count)]
            in if count /= Zero then b' else foldl go b' ps
-
-isMine :: CellPos -> World -> Bool
-isMine p (World _ mines) = p `elem` mines
 
 flag :: CellPos -> Board -> Board
 flag pos (Board b) = Board $ b // change
@@ -161,16 +163,19 @@ neighbors (CellPos x y) =
       ]
 
 event :: Event -> World -> World
-event e w
+event e w@World {board = board, mines = mines, state = state}
   | Just (x, y) <- leftClicked, Just _ <- insideRestart x y = world0
-  | Just (x, y) <- leftClicked,
+  | playing,
+    Just (x, y) <- leftClicked,
     Just p <- insideBoard x y =
-      let lost = world0 in if isMine p w then lost else open p w
-  | Just (x, y) <- rightClicked,
+      let isMine = p `elem` mines in if isMine then w {state = Lost} else open p w
+  | playing,
+    Just (x, y) <- rightClicked,
     Just pos <- insideBoard x y =
-      let World board _ = w in w {board = flag pos board}
+      w {board = flag pos board}
   | otherwise = w
   where
+    playing = state == Playing
     clicked
       | EventKey (MouseButton btn) Down (Modifiers Up Up Up) (x, y) <- e = Just (btn, (x, y))
       | otherwise = Nothing
@@ -190,6 +195,22 @@ boardHeight = 10
 drawBoard :: Board -> Picture
 drawBoard (Board b) = center $ pictures $ map (\(p, cell) -> at p $ drawCell cell) (assocs b)
   where
+    at (CellPos x y) = translate (size x) (size y)
+    center = translate (negate . halfSize $ boardWidth - 1) (negate . halfSize $ boardHeight - 1)
+
+drawBoardLost :: [CellPos] -> Board -> Picture
+drawBoardLost mines (Board b) = center $ pictures $ map draw (assocs b)
+  where
+    draw (p, c) =
+      let out
+            | c == Flaged, p `notElem` mines = pictures [drawMine, incorrect]
+            | c == Flaged, p `elem` mines = pictures [drawMine, correct]
+            | p `elem` mines = drawMine
+            | otherwise = drawCell c
+       in at p out
+    drawMine = pictures [square, color red $ rectangleSolid 10 10]
+    incorrect = border red
+    correct = border green
     at (CellPos x y) = translate (size x) (size y)
     center = translate (negate . halfSize $ boardWidth - 1) (negate . halfSize $ boardHeight - 1)
 
@@ -218,11 +239,13 @@ insideRestart x y =
       bottom = top - fromIntegral restartHeight
    in if left <= x && x <= right && bottom <= y && y <= top then Just $ CellPos 0 0 else Nothing
 
-drawRestart :: MonadIO m => m Picture
-drawRestart = do
+drawRestart :: MonadIO m => WorldState -> m Picture
+drawRestart st = do
   let h2 = restartHeight `div` 2
       wh2 = windowHeight `div` 2
-      c = white
+      c = case st of
+        Playing -> greyN 0.5
+        Lost -> red
       y = fromIntegral $ wh2 - (h2 + restartMargin)
    in return
         ( color c $
