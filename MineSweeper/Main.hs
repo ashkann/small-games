@@ -38,7 +38,6 @@ import Graphics.Gloss.Interface.IO.Game
     white,
     yellow,
   )
-import Graphics.UI.GLUT.Fonts qualified as GLUT
 import Prelude hiding (Left, Right)
 
 data ScreenPos = ScreenPos Float Float deriving (Eq, Ord)
