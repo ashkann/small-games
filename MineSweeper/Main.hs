@@ -1,8 +1,4 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -10,7 +6,6 @@ module Main (main) where
 
 import Control.Monad.IO.Class (MonadIO)
 import Data.Array.IArray (Array, Ix (..), array, assocs, (!), (//))
-import Debug.Trace (trace)
 import Graphics.Gloss.Interface.IO.Game
   ( Color,
     Display (InWindow),
@@ -51,7 +46,7 @@ data CellPos = CellPos Int Int deriving (Eq, Ord, Ix, Show)
 
 newtype Board = Board (Array CellPos Cell)
 
-data WorldState = Playing | Lost deriving (Eq)
+data WorldState = Playing | Lost | Won deriving (Eq)
 
 data World = World {board :: Board, mines :: [CellPos], state :: WorldState}
 
@@ -63,8 +58,9 @@ world0 = World (Board clean) mines Playing
     mines = [CellPos 0 0, CellPos 0 1, CellPos 2 3, CellPos 3 3, CellPos 3 4, CellPos 4 4, CellPos 4 5, CellPos 5 5, CellPos 5 6]
 
 drawWorld :: MonadIO m => World -> m Picture
-drawWorld (World b _ Playing) = do restart <- drawRestart Playing; return $ pictures [drawBoard b, restart]
 drawWorld (World b mines Lost) = do restart <- drawRestart Lost; return $ pictures [drawBoardLost mines b, restart]
+drawWorld (World b _ Playing) = do restart <- drawRestart Playing; return $ pictures [drawBoard b, restart]
+drawWorld (World b _ Won) = do restart <- drawRestart Won; return $ pictures [drawBoard b, restart]
 
 size :: (Real a) => a -> Float
 size x = realToFrac x * cellSize
@@ -168,7 +164,10 @@ event e w@World {board = board, mines = mines, state = state}
   | playing,
     Just (x, y) <- leftClicked,
     Just p <- insideBoard x y =
-      let isMine = p `elem` mines in if isMine then w {state = Lost} else open p w
+      let isMine = p `elem` mines
+       in if isMine
+            then w {state = Lost}
+            else let w'@World {board = b'} = open p w in if isWon mines b' then w' {state = Won} else w'
   | playing,
     Just (x, y) <- rightClicked,
     Just pos <- insideBoard x y =
@@ -185,6 +184,12 @@ event e w@World {board = board, mines = mines, state = state}
     rightClicked
       | Just (RightButton, xy) <- clicked = Just xy
       | otherwise = Nothing
+
+isWon :: [CellPos] -> Board -> Bool
+isWon mines (Board b) = all f $ assocs b
+  where
+    f (_, Opened _) = True
+    f (p, _) = p `elem` mines
 
 boardWidth :: Int
 boardWidth = 9
@@ -246,6 +251,7 @@ drawRestart st = do
       c = case st of
         Playing -> greyN 0.5
         Lost -> red
+        Won -> green
       y = fromIntegral $ wh2 - (h2 + restartMargin)
    in return
         ( color c $
