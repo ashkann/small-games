@@ -22,7 +22,9 @@ import Graphics.Gloss.Interface.IO.Game
     cyan,
     green,
     greyN,
+    line,
     makeColor,
+    mixColors,
     orange,
     pictures,
     playIO,
@@ -80,9 +82,9 @@ screen2cell x y =
    in CellPos cellX cellY
 
 drawCell :: Cell -> Picture
-drawCell Flaged = pictures [square, flag] where flag = color red $ rectangleSolid 10 10
-drawCell (Opened c) = pictures [square, color (for c) (translate (-cellSize / 2 + 5) (-cellSize / 2 + 5) $ scale 0.2 0.2 $ pictures [circle 2.0, number c])]
-drawCell UnOpened = square
+drawCell Flaged = pictures [emptyCell, flag] where flag = color red $ rectangleSolid 10 10
+drawCell (Opened c) = pictures [emptyCell, color (for c) (translate (-cellSize / 2 + 5) (-cellSize / 2 + 5) $ scale 0.2 0.2 $ pictures [circle 2.0, number c])]
+drawCell UnOpened = emptyCell
 
 number :: Count -> Picture
 number Zero = pictures [Text "0"]
@@ -106,19 +108,35 @@ for Six = makeColor 0 0.6 0.4 1.0
 for Seven = cyan
 for Eight = blue
 
-square :: Picture
-square = pictures [cell, border white]
-  where
-    cell = color (greyN 0.7) $ rectangleSolid cellSize cellSize
+background :: Color
+background = greyN 0.7
 
-border :: Color -> Picture
-border c = color c $ rectangleWire cellSize cellSize
+mixWithBackground :: Color -> Color
+mixWithBackground = mixColors 0.8 0.2 background
+
+correct :: Color
+correct = mixWithBackground green
+
+incorrect :: Color
+incorrect = mixWithBackground red
+
+emptyCell :: Picture
+emptyCell = emptyCell' background
+
+emptyCell' :: Color -> Picture
+emptyCell' c = pictures [square c, cellBorder white]
+
+square :: Color -> Picture
+square c = color c $ rectangleSolid cellSize cellSize
+
+cellBorder :: Color -> Picture
+cellBorder c = color c $ rectangleWire cellSize cellSize
 
 open :: CellPos -> World -> World
 open p0 w@(World (Board b0) mines _) = w {board = Board $ go b0 p0}
   where
     go b p
-      | b ! p /= UnOpened = b
+      | Opened _ <- b ! p = b
       | otherwise = do
           let ps = neighbors p
               count = foldl (\c p -> if p `elem` mines then succ c else c) Zero ps
@@ -208,14 +226,15 @@ drawBoardLost mines (Board b) = center $ pictures $ map draw (assocs b)
   where
     draw (p, c) =
       let out
-            | c == Flaged, p `notElem` mines = pictures [drawMine, incorrect]
-            | c == Flaged, p `elem` mines = pictures [drawMine, correct]
-            | p `elem` mines = drawMine
+            | c == Flaged, p `notElem` mines = mine incorrect
+            | c == Flaged, p `elem` mines = mine correct
+            | p `elem` mines = mine background
             | otherwise = drawCell c
        in at p out
-    drawMine = pictures [square, color red $ rectangleSolid 10 10]
-    incorrect = border red
-    correct = border green
+    mine c =
+      let pole = color black $ pictures []
+          flag = color red $ rectangleSolid 10 10
+       in pictures [emptyCell' c, flag]
     at (CellPos x y) = translate (size x) (size y)
     center = translate (negate . halfSize $ boardWidth - 1) (negate . halfSize $ boardHeight - 1)
 
