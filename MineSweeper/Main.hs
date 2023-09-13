@@ -16,16 +16,13 @@ import Graphics.Gloss.Interface.IO.Game
     MouseButton (LeftButton, RightButton),
     Picture (Text),
     black,
-    blue,
     circle,
     color,
-    cyan,
     green,
     greyN,
     line,
-    makeColor,
+    makeColorI,
     mixColors,
-    orange,
     pictures,
     playIO,
     rectangleSolid,
@@ -34,7 +31,6 @@ import Graphics.Gloss.Interface.IO.Game
     scale,
     translate,
     white,
-    yellow,
   )
 import Prelude hiding (Left, Right)
 
@@ -57,7 +53,25 @@ world0 = World (Board clean) mines Playing
   where
     bounds = let lower = CellPos 0 0; upper = CellPos (boardWidth - 1) (boardHeight - 1) in (lower, upper)
     clean = array bounds $ map (,UnOpened) (range bounds)
-    mines = [CellPos 0 0, CellPos 0 1, CellPos 2 3, CellPos 3 3, CellPos 3 4, CellPos 4 4, CellPos 4 5, CellPos 5 5, CellPos 5 6]
+    mines =
+      [ CellPos 0 0,
+        CellPos 0 1,
+        CellPos 1 1,
+        CellPos 2 1,
+        CellPos 2 0,
+        CellPos 1 2,
+        CellPos 1 3,
+        CellPos 0 8,
+        CellPos 8 0,
+        CellPos 2 0,
+        CellPos 2 1,
+        CellPos 2 3,
+        CellPos 3 3,
+        CellPos 4 4,
+        CellPos 4 5,
+        CellPos 6 5,
+        CellPos 5 6
+      ]
 
 drawWorld :: MonadIO m => World -> m Picture
 drawWorld (World b mines Lost) = do restart <- drawRestart Lost; return $ pictures [drawBoardLost mines b, restart]
@@ -81,8 +95,11 @@ screen2cell x y =
       cellY = floor $ blocks boardY
    in CellPos cellX cellY
 
+drawFlag :: Picture
+drawFlag = let s = halfSize (1 :: Integer) in color red $ line [(-s, -s), (s, s)] <> line [(-s, s), (s, -s)]
+
 drawCell :: Cell -> Picture
-drawCell Flaged = pictures [emptyCell, flag] where flag = color red $ rectangleSolid 10 10
+drawCell Flaged = pictures [emptyCell, drawFlag]
 drawCell (Opened c) = pictures [emptyCell, color (for c) (translate (-cellSize / 2 + 5) (-cellSize / 2 + 5) $ scale 0.2 0.2 $ pictures [circle 2.0, number c])]
 drawCell UnOpened = emptyCell
 
@@ -99,14 +116,14 @@ number Eight = pictures [Text "8"]
 
 for :: Count -> Color
 for Zero = white
-for One = red
-for Two = orange
-for Three = yellow
-for Four = makeColor 0.6 0.8 0.2 1.0
-for Five = green
-for Six = makeColor 0 0.6 0.4 1.0
-for Seven = cyan
-for Eight = blue
+for One = makeColorI 0 0 245 0
+for Two = makeColorI 56 128 34 0
+for Three = makeColorI 228 51 36 0
+for Four = makeColorI 0 0 127 0
+for Five = makeColorI 121 21 13 0
+for Six = makeColorI 56 128 130 0
+for Seven = makeColorI 121 12 128 0
+for Eight = greyN 0.5
 
 background :: Color
 background = greyN 0.7
@@ -213,30 +230,31 @@ boardWidth :: Int
 boardWidth = 9
 
 boardHeight :: Int
-boardHeight = 10
+boardHeight = 9
+
+drawBoard' :: (CellPos -> Cell -> Picture) -> Board -> Picture
+drawBoard' draw (Board b) = center $ pictures $ uncurry draw <$> assocs b
 
 drawBoard :: Board -> Picture
-drawBoard (Board b) = center $ pictures $ map (\(p, cell) -> at p $ drawCell cell) (assocs b)
-  where
-    at (CellPos x y) = translate (size x) (size y)
-    center = translate (negate . halfSize $ boardWidth - 1) (negate . halfSize $ boardHeight - 1)
+drawBoard = drawBoard' (\p c -> at p $ drawCell c)
 
 drawBoardLost :: [CellPos] -> Board -> Picture
-drawBoardLost mines (Board b) = center $ pictures $ map draw (assocs b)
+drawBoardLost mines = drawBoard' draw
   where
-    draw (p, c) =
+    draw p c =
       let out
-            | c == Flaged, p `notElem` mines = mine incorrect
-            | c == Flaged, p `elem` mines = mine correct
+            | c == Flaged && p `notElem` mines = mine incorrect
+            | c == Flaged && p `elem` mines = mine correct
             | p `elem` mines = mine background
             | otherwise = drawCell c
        in at p out
-    mine c =
-      let pole = color black $ pictures []
-          flag = color red $ rectangleSolid 10 10
-       in pictures [emptyCell' c, flag]
-    at (CellPos x y) = translate (size x) (size y)
-    center = translate (negate . halfSize $ boardWidth - 1) (negate . halfSize $ boardHeight - 1)
+    mine c = pictures [emptyCell' c, drawFlag]
+
+at :: CellPos -> Picture -> Picture
+at (CellPos x y) = translate (size x) (size y)
+
+center :: Picture -> Picture
+center = translate (negate . halfSize $ boardWidth - 1) (negate . halfSize $ boardHeight - 1)
 
 insideBoard :: Float -> Float -> Maybe CellPos
 insideBoard x y =
