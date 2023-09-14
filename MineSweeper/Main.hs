@@ -100,7 +100,8 @@ drawFlag = let s = halfSize (1 :: Integer) in color red $ line [(-s, -s), (s, s)
 
 drawCell :: Cell -> Picture
 drawCell Flaged = pictures [emptyCell, drawFlag]
-drawCell (Opened c) = pictures [emptyCell, color (for c) (translate (-cellSize / 2 + 5) (-cellSize / 2 + 5) $ scale 0.2 0.2 $ pictures [circle 2.0, number c])]
+drawCell (Opened Zero) = pictures [emptyCell' $ greyN 0.5]
+drawCell (Opened c) = pictures [emptyCell, color (for c) (translate (-cellSize / 2 + 5) (-cellSize / 2 + 5) $ scale 0.25 0.25 $ pictures [circle 2.0, number c])]
 drawCell UnOpened = emptyCell
 
 number :: Count -> Picture
@@ -304,7 +305,7 @@ windowHeight :: Int
 windowHeight = 500
 
 cellSize :: Float
-cellSize = 30
+cellSize = 35
 
 main :: IO ()
 main = do
