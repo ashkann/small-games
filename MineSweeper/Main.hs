@@ -5,7 +5,7 @@
 module Main (main) where
 
 import Control.Monad.IO.Class (MonadIO)
-import Data.Array.IArray (Array, Ix (..), array, assocs, (!), (//))
+import Data.Array.IArray (Array, IArray (bounds), Ix (..), array, assocs, (!), (//))
 import Graphics.Gloss.Interface.IO.Game
   ( Color,
     Display (InWindow),
@@ -16,6 +16,7 @@ import Graphics.Gloss.Interface.IO.Game
     MouseButton (LeftButton, RightButton),
     Picture (Text),
     black,
+    blank,
     circle,
     color,
     green,
@@ -48,6 +49,8 @@ data WorldState = Playing | Lost | Won deriving (Eq)
 
 data World = World {board :: Board, mines :: [CellPos], state :: WorldState}
 
+data Border = None | Normal
+
 world0 :: World
 world0 = World (Board clean) mines Playing
   where
@@ -73,10 +76,31 @@ world0 = World (Board clean) mines Playing
         CellPos 5 6
       ]
 
-drawWorld :: MonadIO m => World -> m Picture
-drawWorld (World b mines Lost) = do restart <- drawRestart Lost; return $ pictures [drawBoardLost mines b, restart]
-drawWorld (World b _ Playing) = do restart <- drawRestart Playing; return $ pictures [drawBoard b, restart]
-drawWorld (World b _ Won) = do restart <- drawRestart Won; return $ pictures [drawBoard b, restart]
+drawWorld :: World -> Picture
+drawWorld (World b mines st) =
+  let restart = drawRestart st
+      board
+        | st == Lost = drawBoardLost mines b
+        | otherwise = drawBoard b
+   in pictures [board, border b, restart]
+
+border :: Board -> Picture
+border (Board b) = center $ pictures $ draw <$> range (bounds b)
+  where
+    clr p p' =
+      let c
+            | inRange (bounds b) p', Opened Zero <- b ! p, Opened Zero <- b ! p' = makeColorI 0 0 0 0
+            | otherwise = white
+       in color c
+    draw p@(CellPos x y) =
+      let s = halfSize (1 :: Integer)
+          lines =
+            [ clr p (CellPos x (y + 1)) $ line [(-s, s), (s, s)],
+              clr p (CellPos x (y - 1)) $ line [(-s, -s), (s, -s)],
+              clr p (CellPos (x - 1) y) $ line [(-s, s), (-s, -s)],
+              clr p (CellPos (x + 1) y) $ line [(s, s), (s, -s)]
+            ]
+       in at p $ pictures lines
 
 size :: (Real a) => a -> Float
 size x = realToFrac x * cellSize
@@ -142,13 +166,10 @@ emptyCell :: Picture
 emptyCell = emptyCell' background
 
 emptyCell' :: Color -> Picture
-emptyCell' c = pictures [square c, cellBorder white]
+emptyCell' = square
 
 square :: Color -> Picture
 square c = color c $ rectangleSolid cellSize cellSize
-
-cellBorder :: Color -> Picture
-cellBorder c = color c $ rectangleWire cellSize cellSize
 
 open :: CellPos -> World -> World
 open p0 w@(World (Board b0) mines _) = w {board = Board $ go b0 p0}
@@ -282,8 +303,8 @@ insideRestart x y =
       bottom = top - fromIntegral restartHeight
    in if left <= x && x <= right && bottom <= y && y <= top then Just $ CellPos 0 0 else Nothing
 
-drawRestart :: MonadIO m => WorldState -> m Picture
-drawRestart st = do
+drawRestart :: WorldState -> Picture
+drawRestart st =
   let h2 = restartHeight `div` 2
       wh2 = windowHeight `div` 2
       c = case st of
@@ -291,12 +312,11 @@ drawRestart st = do
         Lost -> red
         Won -> green
       y = fromIntegral $ wh2 - (h2 + restartMargin)
-   in return
-        ( color c $
-            translate 0 y $
-              pictures
-                [rectangleWire (fromIntegral restartWidth) (fromIntegral restartHeight)]
-        )
+   in ( color c $
+          translate 0 y $
+            pictures
+              [rectangleWire (fromIntegral restartWidth) (fromIntegral restartHeight)]
+      )
 
 windowWidth :: Int
 windowWidth = 500
@@ -314,6 +334,6 @@ main = do
     black
     5
     world0
-    drawWorld
+    (return . drawWorld)
     (\e w -> return $ event e w)
     (\_ w -> return w)
