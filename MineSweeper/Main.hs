@@ -5,15 +5,16 @@
 module Main (main) where
 
 import Data.Array.IArray (Array, IArray (bounds), Ix (..), array, assocs, (!), (//))
-import Graphics.Gloss.Interface.IO.Game
+import Graphics.Gloss.Interface.Pure.Game
   ( Color,
     Display (InWindow),
     Event (EventKey),
-    Key (MouseButton),
+    Key (MouseButton, SpecialKey),
     KeyState (Down, Up),
     Modifiers (Modifiers),
     MouseButton (LeftButton, RightButton),
     Picture (Text),
+    SpecialKey (KeyEsc),
     black,
     circle,
     color,
@@ -23,7 +24,7 @@ import Graphics.Gloss.Interface.IO.Game
     makeColorI,
     mixColors,
     pictures,
-    playIO,
+    play,
     rectangleSolid,
     rectangleWire,
     red,
@@ -31,6 +32,7 @@ import Graphics.Gloss.Interface.IO.Game
     translate,
     white,
   )
+import System.Exit (exitSuccess)
 import Prelude hiding (Left, Right)
 
 data ScreenPos = ScreenPos Float Float deriving (Eq, Ord)
@@ -226,6 +228,9 @@ event e w@World {board = board, mines = mines, state = state}
   | otherwise = w
   where
     playing = state == Playing
+    esc
+      | EventKey (SpecialKey KeyEsc) Down (Modifiers Up Up Up) _ <- e = True
+      | otherwise = False
     clicked
       | EventKey (MouseButton btn) Down (Modifiers Up Up Up) (x, y) <- e = Just (btn, (x, y))
       | otherwise = Nothing
@@ -323,11 +328,11 @@ cellSize = 35
 
 main :: IO ()
 main = do
-  playIO
+  play
     (InWindow "Mine Sweeper" (windowWidth, windowHeight) (10, 10))
     black
     5
     world0
-    (return . drawWorld)
-    (\e w -> return $ event e w)
-    (\_ w -> return w)
+    drawWorld
+    event
+    (\_ w -> w)
