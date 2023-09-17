@@ -4,7 +4,6 @@
 
 module Main (main) where
 
-import Control.Monad.IO.Class (MonadIO)
 import Data.Array.IArray (Array, IArray (bounds), Ix (..), array, assocs, (!), (//))
 import Graphics.Gloss.Interface.IO.Game
   ( Color,
@@ -16,7 +15,6 @@ import Graphics.Gloss.Interface.IO.Game
     MouseButton (LeftButton, RightButton),
     Picture (Text),
     black,
-    blank,
     circle,
     color,
     green,
@@ -82,25 +80,21 @@ drawWorld (World b mines st) =
       board
         | st == Lost = drawBoardLost mines b
         | otherwise = drawBoard b
-   in pictures [board, border b, restart]
+   in pictures [board, gridLines b, restart]
 
-border :: Board -> Picture
-border (Board b) = center $ pictures $ draw <$> range (bounds b)
+gridLines :: Board -> Picture
+gridLines (Board b) = center $ pictures $ draw <$> range (bounds b)
   where
-    clr p p' =
-      let c
-            | inRange (bounds b) p', Opened Zero <- b ! p, Opened Zero <- b ! p' = makeColorI 0 0 0 0
-            | otherwise = white
-       in color c
     draw p@(CellPos x y) =
       let s = halfSize (1 :: Integer)
-          lines =
-            [ clr p (CellPos x (y + 1)) $ line [(-s, s), (s, s)],
-              clr p (CellPos x (y - 1)) $ line [(-s, -s), (s, -s)],
-              clr p (CellPos (x - 1) y) $ line [(-s, s), (-s, -s)],
-              clr p (CellPos (x + 1) y) $ line [(s, s), (s, -s)]
-            ]
-       in at p $ pictures lines
+          right = [line [(s, -s), (s, s)] | border $ CellPos (x + 1) y]
+          bottom = [line [(-s, -s), (s, -s)] | y == 0 || border (CellPos x (y - 1))]
+          left = [line [(-s, s), (-s, -s)] | x == 0 || border (CellPos (x - 1) y)]
+          top = [line [(-s, s), (s, s)] | border $ CellPos x (y + 1)]
+          border p'
+            | inRange (bounds b) p', Opened Zero <- b ! p, Opened Zero <- b ! p' = False
+            | otherwise = True
+       in color white $ at p $ pictures $ concat [top, right, bottom, left]
 
 size :: (Real a) => a -> Float
 size x = realToFrac x * cellSize
