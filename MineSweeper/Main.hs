@@ -32,7 +32,6 @@ import Graphics.Gloss.Interface.Pure.Game
     translate,
     white,
   )
-import System.Exit (exitSuccess)
 import Prelude hiding (Left, Right)
 
 data ScreenPos = ScreenPos Float Float deriving (Eq, Ord)
@@ -48,8 +47,6 @@ newtype Board = Board (Array CellPos Cell)
 data WorldState = Playing | Lost | Won deriving (Eq)
 
 data World = World {board :: Board, mines :: [CellPos], state :: WorldState}
-
-data Border = None | Normal
 
 world0 :: World
 world0 = World (Board clean) mines Playing
