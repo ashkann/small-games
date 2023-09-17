@@ -4,6 +4,7 @@ maintainer: "ashkan.kh.nazary@gmail.com"
 dependencies:
   - base >= 4.7 && < 5
   - containers
+  - array
   - wai-extra
   - yesod-core
   - yesod-eventsource
@@ -38,26 +39,40 @@ library:
   source-dirs: lib
 
 executables:
-  tic-tac-toe:
-    main: tic-tac-toe.hs
-    source-dirs: app
-    dependencies:
-      - small-games
+  # tic-tac-toe:
+  #   main: tic-tac-toe.hs
+  #   source-dirs: app
+  #   dependencies:
+  #     - small-games
 
-  rock-paper-scissors:
-    main: rock-paper-scissors.hs
-    source-dirs: app
-    dependencies:
-      - small-games
+  # rock-paper-scissors:
+  #   main: rock-paper-scissors.hs
+  #   source-dirs: app
+  #   dependencies:
+  #     - small-games
       
-  server:
-    main: server.hs
-    source-dirs: app
-    dependencies:
-      - small-games
+  # server:
+  #   main: server.hs
+  #   source-dirs: app
+  #   dependencies:
+  #     - small-games
 
-  gloss-client:
-    main: gloss-client.hs
-    source-dirs: app
-    dependencies:
-      - small-games
+  # gloss-client:
+  #   main: gloss-client.hs
+  #   source-dirs: app
+  #   dependencies:
+  #     - small-games
+      
+  # tetris-client:
+  #   main: tetris-client.hs
+  #   source-dirs: app
+  #   dependencies:
+  #     - small-games
+
+  minesweeper:
+    main:                Main.hs
+    source-dirs:         MineSweeper
+    
+  snake:
+    main:                Main.hs
+    source-dirs:         Snake  

@@ -24,6 +24,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
   build-depends:
       aeson
+    , array
     , attoparsec
     , base >=4.7 && <5
     , binary
@@ -44,15 +45,16 @@ library
     , yesod-eventsource
   default-language: Haskell2010
 
-executable gloss-client
-  main-is: gloss-client.hs
+executable minesweeper
+  main-is: Main.hs
   other-modules:
       Paths_small_games
   hs-source-dirs:
-      app
+      MineSweeper
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
   build-depends:
       aeson
+    , array
     , attoparsec
     , base >=4.7 && <5
     , binary
@@ -65,7 +67,6 @@ executable gloss-client
     , mtl
     , random
     , resourcet
-    , small-games
     , stm
     , text
     , uuid
@@ -74,15 +75,16 @@ executable gloss-client
     , yesod-eventsource
   default-language: Haskell2010
 
-executable rock-paper-scissors
-  main-is: rock-paper-scissors.hs
+executable snake
+  main-is: Main.hs
   other-modules:
       Paths_small_games
   hs-source-dirs:
-      app
+      Snake
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
   build-depends:
       aeson
+    , array
     , attoparsec
     , base >=4.7 && <5
     , binary
@@ -95,67 +97,6 @@ executable rock-paper-scissors
     , mtl
     , random
     , resourcet
-    , small-games
-    , stm
-    , text
-    , uuid
-    , wai-extra
-    , yesod-core
-    , yesod-eventsource
-  default-language: Haskell2010
-
-executable server
-  main-is: server.hs
-  other-modules:
-      Paths_small_games
-  hs-source-dirs:
-      app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
-  build-depends:
-      aeson
-    , attoparsec
-    , base >=4.7 && <5
-    , binary
-    , bytestring
-    , conduit
-    , conduit-extra
-    , containers
-    , gloss
-    , http-conduit
-    , mtl
-    , random
-    , resourcet
-    , small-games
-    , stm
-    , text
-    , uuid
-    , wai-extra
-    , yesod-core
-    , yesod-eventsource
-  default-language: Haskell2010
-
-executable tic-tac-toe
-  main-is: tic-tac-toe.hs
-  other-modules:
-      Paths_small_games
-  hs-source-dirs:
-      app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
-  build-depends:
-      aeson
-    , attoparsec
-    , base >=4.7 && <5
-    , binary
-    , bytestring
-    , conduit
-    , conduit-extra
-    , containers
-    , gloss
-    , http-conduit
-    , mtl
-    , random
-    , resourcet
-    , small-games
     , stm
     , text
     , uuid
