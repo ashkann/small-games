@@ -51,8 +51,8 @@ data World = World {board :: Board, mines :: [CellPos], state :: WorldState}
 world0 :: World
 world0 = World (Board clean) mines Playing
   where
-    bounds = let lower = CellPos 0 0; upper = CellPos (boardWidth - 1) (boardHeight - 1) in (lower, upper)
-    clean = array bounds $ map (,UnOpened) (range bounds)
+    _bounds = let lower = CellPos 0 0; upper = CellPos (boardWidth - 1) (boardHeight - 1) in (lower, upper)
+    clean = array _bounds $ map (,UnOpened) (range _bounds)
     mines =
       [ CellPos 0 0,
         CellPos 0 1,
@@ -171,7 +171,7 @@ open p0 w@(World (Board b0) mines _) = w {board = Board $ go b0 p0}
       | Opened _ <- b ! p = b
       | otherwise = do
           let ps = neighbors p
-              count = foldl (\c p -> if p `elem` mines then succ c else c) Zero ps
+              count = foldl (\c _p -> if _p `elem` mines then succ c else c) Zero ps
               b' = b // [(p, Opened count)]
            in if count /= Zero then b' else foldl go b' ps
 
@@ -225,9 +225,6 @@ event e w@World {board = board, mines = mines, state = state}
   | otherwise = w
   where
     playing = state == Playing
-    esc
-      | EventKey (SpecialKey KeyEsc) Down (Modifiers Up Up Up) _ <- e = True
-      | otherwise = False
     clicked
       | EventKey (MouseButton btn) Down (Modifiers Up Up Up) (x, y) <- e = Just (btn, (x, y))
       | otherwise = Nothing
