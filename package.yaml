@@ -73,6 +73,10 @@ executables:
     main:                Main.hs
     source-dirs:         MineSweeper
     
+  sevent-segment-display:
+    main:                Main.hs
+    source-dirs:         SevenSegmentDisplay
+    
   snake:
     main:                Main.hs
     source-dirs:         Snake  

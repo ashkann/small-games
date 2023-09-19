@@ -75,6 +75,36 @@ executable minesweeper
     , yesod-eventsource
   default-language: Haskell2010
 
+executable sevent-segment-display
+  main-is: Main.hs
+  other-modules:
+      Paths_small_games
+  hs-source-dirs:
+      SevenSegmentDisplay
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
+  build-depends:
+      aeson
+    , array
+    , attoparsec
+    , base >=4.7 && <5
+    , binary
+    , bytestring
+    , conduit
+    , conduit-extra
+    , containers
+    , gloss
+    , http-conduit
+    , mtl
+    , random
+    , resourcet
+    , stm
+    , text
+    , uuid
+    , wai-extra
+    , yesod-core
+    , yesod-eventsource
+  default-language: Haskell2010
+
 executable snake
   main-is: Main.hs
   other-modules:
