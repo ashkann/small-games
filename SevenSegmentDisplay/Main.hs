@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Main (main) where
 
 import Data.Type.Coercion (trans)
@@ -12,13 +14,16 @@ import Graphics.Gloss.Interface.Pure.Game
     color,
     cyan,
     dark,
+    dim,
     green,
     line,
+    makeColor,
     orange,
     pictures,
     play,
     polygon,
     red,
+    rgbaOfColor,
     translate,
     yellow,
   )
@@ -29,13 +34,10 @@ windowWidth = 500
 windowHeight :: Int
 windowHeight = 500
 
-data World = World Int
-
-clock0 :: World
-clock0 = World 0
+newtype World = World Float
 
 tick :: Float -> World -> World
-tick dt w = w
+tick dt (World t) = World $ t + dt
 
 event :: Event -> World -> World
 event e w = w
@@ -71,10 +73,11 @@ thickLED :: Float -> Float -> Float -> Color -> LED
 thickLED w h spacing c =
   LED
     { drawOn = draw c,
-      drawOff = draw $ (dark . dark . dark . dark) c,
+      drawOff = draw cOff,
       at = at'
     }
   where
+    cOff = let (r, g, b, a) = rgbaOfColor c in makeColor (r - 0.87) (g - 0.87) (b - 0.87) a
     at' x = let size = ((w + h + g + h) * 2) + spacing in translate (fromIntegral x * size) 0
     draw c seg = color c $ poly seg
     v = polygon [(0, -(w + h)), (-h, -w), (-h, w), (0, w + h), (h, w), (h, -w)]
@@ -123,13 +126,26 @@ drawSevenSegment led (a, b, c, d, e, f, g) =
     draw isOn seg = if isOn then drawOn led seg else drawOff led seg
 
 drawClock :: World -> Picture
-drawClock w =
-  let led1 = thinLED 10 5 yellow
+drawClock (World t) =
+  let t' = show (round $ t * 10 :: Int)
+      led1 = thinLED 10 5 yellow
       led2 = thinLED 10 10 orange
       led3 = thinLED 10 15 green
       led4 = thinLED 10 2 cyan
       led5 = thickLED 15 5 10 cyan
-      digits = [Zero, One, Two, Three, Four, Five, Six, Seven, Eight, Nine]
+      toDigit = \case
+        '0' -> Zero
+        '1' -> One
+        '2' -> Two
+        '3' -> Three
+        '4' -> Four
+        '5' -> Five
+        '6' -> Six
+        '7' -> Seven
+        '8' -> Eight
+        '9' -> Nine
+        _ -> error "Invalid digit"
+      digits = toDigit <$> t'
       draw led = pictures $ zipWith (\x d -> at led x $ drawDigit led d) [0 ..] digits
    in pictures
         [ translate 0 50.0 $ draw led1,
@@ -144,8 +160,8 @@ main = do
   play
     (InWindow "Seven Segment Display" (windowWidth, windowHeight) (10, 10))
     black
-    5
-    clock0
+    20
+    (World 0.0)
     drawClock
     event
     tick
