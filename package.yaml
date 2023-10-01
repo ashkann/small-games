@@ -22,6 +22,10 @@ dependencies:
   - attoparsec
   - mtl
   - gloss
+  - streamly
+  - streamly-core
+  - exceptions
+  - vector
 
 ghc-options:
   - -Wall
@@ -73,9 +77,13 @@ executables:
     main:                Main.hs
     source-dirs:         MineSweeper
     
-  sevent-segment-display:
+  seven-segment-display:
     main:                Main.hs
     source-dirs:         SevenSegmentDisplay
+    
+  dot-matrix-display:
+    main:                Main.hs
+    source-dirs:         DotMatrixDisplay
     
   snake:
     main:                Main.hs

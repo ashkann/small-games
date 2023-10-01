@@ -11,6 +11,7 @@ import Graphics.Gloss.Interface.Pure.Game
     Picture,
     black,
     blank,
+    blue,
     color,
     cyan,
     dark,
@@ -25,7 +26,7 @@ import Graphics.Gloss.Interface.Pure.Game
     red,
     rgbaOfColor,
     translate,
-    yellow,
+    yellow, circle,
   )
 
 windowWidth :: Int
@@ -92,9 +93,35 @@ thickLED w h spacing c =
     poly F = translate (-d) d v
     poly G = polygon [(-(w + h), 0), (-w, h), (w, h), (w + h, 0), (w, -h), (-w, -h)]
 
+thickLED2 :: Float -> Float -> Float -> Color -> LED
+thickLED2 w h spacing c =
+  LED
+    { drawOn = draw c,
+      drawOff = draw cOff,
+      at = at'
+    }
+  where
+    h2 = 2 * h
+    cOff = let (r, g, b, a) = rgbaOfColor c in makeColor (r - 0.87) (g - 0.87) (b - 0.87) a
+    at' x = let size = ((w + h + g + h) * 2) + spacing in translate (fromIntegral x * size) 0
+    draw c seg = color c $ poly seg
+    left = pictures [circle 5, polygon [(-h, -w), (-h, w), (h, w + h2), (h, -(w + h2))] ]
+    right = polygon [(-h, -(w + h2)), (-h, w + h2), (h, w), (h, -w)]
+    g = 1
+    d = h + w + g
+    d' = 2 * w + h + g
+    d2 = d * 2
+    poly A = translate 0 d' $ polygon [(-w, -h), (-(w + h2), h), (w + h2, h), (w, -h)]
+    poly B = translate d d left
+    poly C = translate d (-d) left
+    poly D = translate 0 (-d2) $ polygon [(-(w + h2), -h), (-w, h), (w, h), (w + h2, -h)]
+    poly E = translate (-d) (-d) right
+    poly F = translate (-d) d right
+    poly G = polygon [(-(w + h), 0), (-w, h), (w, h), (w + h, 0), (w, -h), (-w, -h)]
+
 type SevenSegment = (Bool, Bool, Bool, Bool, Bool, Bool, Bool)
 
-data Digit = Zero | One | Two | Three | Four | Five | Six | Seven | Eight | Nine
+data Digit = Zero | One | Two | Three | Four | Five | Six | Seven | Eight | Nine deriving (Enum)
 
 toSevenSegment :: Digit -> SevenSegment
 toSevenSegment Zero = (True, True, True, True, True, True, False)
@@ -110,6 +137,11 @@ toSevenSegment Nine = (True, True, True, True, False, True, True)
 
 drawDigit :: LED -> Digit -> Picture
 drawDigit led = drawSevenSegment led . toSevenSegment
+
+drawInt :: LED -> Int -> Picture
+drawInt led t = pictures $ zipWith (\i d -> at led i $ drawDigit led d) [0 ..] (reverse $ toEnum <$> digits t)
+  where
+    digits n = let (q, d) = n `divMod` 10 in if q == 0 then [d] else d : digits q
 
 drawSevenSegment :: LED -> SevenSegment -> Picture
 drawSevenSegment led (a, b, c, d, e, f, g) =
@@ -127,31 +159,17 @@ drawSevenSegment led (a, b, c, d, e, f, g) =
 
 drawClock :: World -> Picture
 drawClock (World t) =
-  let t' = show (round $ t * 10 :: Int)
-      led1 = thinLED 10 5 yellow
+  let led1 = thinLED 10 5 yellow
       led2 = thinLED 10 10 orange
       led3 = thinLED 10 15 green
-      led4 = thinLED 10 2 cyan
+      led4 = thickLED2 10 5 10 blue
       led5 = thickLED 15 5 10 cyan
-      toDigit = \case
-        '0' -> Zero
-        '1' -> One
-        '2' -> Two
-        '3' -> Three
-        '4' -> Four
-        '5' -> Five
-        '6' -> Six
-        '7' -> Seven
-        '8' -> Eight
-        '9' -> Nine
-        _ -> error "Invalid digit"
-      digits = toDigit <$> t'
-      draw led = pictures $ zipWith (\x d -> at led x $ drawDigit led d) [0 ..] digits
+      draw led = drawInt led $ round $ t * 10
    in pictures
-        [ translate 0 50.0 $ draw led1,
-          translate 0 0 $ draw led2,
+        [ translate 0 100 $ draw led1,
+          translate 0 80 $ draw led2,
           -- translate 0 (-30) $ draw led3,
-          -- translate 0 (-60) $ draw led4,
+          translate 0 40 $ draw led4,
           translate 0 (-50) $ draw led5
         ]
 
