@@ -12,10 +12,11 @@ import Data.Function ((&))
 import Data.Functor.Identity (Identity (Identity))
 import Data.Map.Strict (insert)
 import Data.Map.Strict qualified as Map
-import Data.Maybe (isJust)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Type.Coercion (trans)
 import Data.Word (Word16, Word8)
 import Debug.Trace (trace)
+import GHC.Base ((<|>))
 import Graphics.Gloss.Interface.Pure.Game
   ( Color,
     Display (InWindow),
@@ -85,8 +86,8 @@ event e w@(World font t i)
 draw :: World -> Picture
 draw (World font t (Input {s = s})) =
   let l1 = "Seconds passed: " ++ show (floor t :: Int)
-      l2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890"
-      l3 = "abcdefghijklmnopqrstuvwxyz !@#$%^&*()_+"
+      l2 = "ABCDEFGHIJKLMNOP±QRSTUVWXYZ 1234567890"
+      l3 = "abcdefghijklmnopqrstuvwxyz !@#$%^&*()_+ ±"
       l4 = s
       s1 = sqaureDotStyle blue 1 0
       s2 = sqaureDotStyle blue 2 0
@@ -104,7 +105,11 @@ drawText :: Style -> Font -> String -> Picture
 drawText style font s = pictures $ zipWith (\x c -> atChar style x $ drawChar style font c) [1 :: Int ..] s
 
 drawChar :: Style -> Font -> Char -> Picture
-drawChar style font c = maybe blank (drawGlyph style) $ Map.lookup c font
+drawChar style font c = case Map.lookup c font <|> glyph2 replacement of
+  Just g -> drawGlyph style g
+  Nothing -> blank
+  where
+    replacement = [0x00, 0x00, 0x00, 0x7E, 0x66, 0x5A, 0x5A, 0x7A, 0x76, 0x76, 0x7E, 0x76, 0x76, 0x7E, 0x00, 0x00]
 
 drawGlyph :: Style -> Glyph -> Picture
 drawGlyph style (Glyph r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15) =
@@ -166,9 +171,51 @@ data Glyph = Glyph Row Row Row Row Row Row Row Row Row Row Row Row Row Row Row R
 
 type Font = Map.Map Char Glyph
 
-glyphFromRows :: [Row] -> Maybe Glyph
-glyphFromRows [r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15] = Just $ Glyph r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15
-glyphFromRows _ = Nothing
+glyph2 :: [Word8] -> Maybe Glyph
+glyph2 hex = rows $ go hex [] (16 :: Int)
+  where
+    go (c0 : rest) acc n | n /= 0 = let r = row c0 in go rest (r : acc) (n - 1)
+    go _ acc _ = acc
+    row c = Row (at 7) (at 6) (at 5) (at 4) (at 3) (at 2) (at 1) (at 0)
+      where
+        at i = if testBit c i then On else Off
+    rows [r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15] = Just $ Glyph r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15
+    rows _ = Nothing
+
+glyph :: [Word8] -> Maybe Glyph
+glyph hex = fromRow $ go hex [] (16 :: Int)
+  where
+    go (c0 : c1 : rest) rows n | n /= 0 = let r = row $ byte c0 c1 in go rest (r : rows) (n - 1)
+    go _ rows _ = rows
+    row :: Word8 -> Row
+    row c = Row (at 7) (at 6) (at 5) (at 4) (at 3) (at 2) (at 1) (at 0)
+      where
+        at i = if testBit c i then On else Off
+    fromRow [r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15] = Just $ Glyph r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15
+    fromRow _ = Nothing
+
+byte :: Word8 -> Word8 -> Word8
+byte hi lo = (hexDigit hi `shiftL` 4) .|. (hexDigit lo .&. 0x0F)
+  where
+    hexDigit :: Word8 -> Word8
+    hexDigit ch = case toEnum . fromIntegral $ ch of
+      '0' -> 0
+      '1' -> 1
+      '2' -> 2
+      '3' -> 3
+      '4' -> 4
+      '5' -> 5
+      '6' -> 6
+      '7' -> 7
+      '8' -> 8
+      '9' -> 9
+      'A' -> 10
+      'B' -> 11
+      'C' -> 12
+      'D' -> 13
+      'E' -> 14
+      'F' -> 15
+      _ -> error $ "invalid hex digit: " ++ show (toEnum . fromIntegral $ ch :: Char)
 
 readFont :: (MonadIO m, MonadCatch m) => String -> m Font
 readFont name =
@@ -179,39 +226,10 @@ readFont name =
         | Just g <- glyph rest = Just (toEnum . fromIntegral $ code c0 c1 c2 c3, g)
         | otherwise = Nothing
       parse _ = Nothing
-      glyph hex = glyphFromRows $ go hex [] (16 :: Int)
-        where
-          go (c0 : c1 : rest) rows n | n /= 0 = let r = row $ byte c0 c1 in go rest (r : rows) (n - 1)
-          go _ rows _ = rows
-      row :: Word8 -> Row
-      row c = Row (at 7) (at 6) (at 5) (at 4) (at 3) (at 2) (at 1) (at 0)
-        where
-          at i = if testBit c i then On else Off
-      byte :: Word8 -> Word8 -> Word8
-      byte hi lo = (hexDigit hi `shiftL` 4) .|. (hexDigit lo .&. 0x0F)
       code c0 c1 c2 c3 =
         let hi = fromIntegral $ byte c0 c1 :: Word16
             lo = fromIntegral $ byte c2 c3 :: Word16
          in hi `shiftL` 8 .|. (lo .&. 0x00FF)
-      hexDigit :: Word8 -> Word8
-      hexDigit ch = case toEnum . fromIntegral $ ch of
-        '0' -> 0
-        '1' -> 1
-        '2' -> 2
-        '3' -> 3
-        '4' -> 4
-        '5' -> 5
-        '6' -> 6
-        '7' -> 7
-        '8' -> 8
-        '9' -> 9
-        'A' -> 10
-        'B' -> 11
-        'C' -> 12
-        'D' -> 13
-        'E' -> 14
-        'F' -> 15
-        _ -> error $ "invalid hex digit: " ++ show (toEnum . fromIntegral $ ch :: Char)
       font = Fold.foldl' (\m (k, v) -> insert k v m) Map.empty
    in Stream.fold font $ Stream.take 128 glyphs
 
