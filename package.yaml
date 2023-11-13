@@ -54,7 +54,7 @@ executables:
   #   source-dirs: app
   #   dependencies:
   #     - small-games
-      
+
   # server:
   #   main: server.hs
   #   source-dirs: app
@@ -66,25 +66,28 @@ executables:
   #   source-dirs: app
   #   dependencies:
   #     - small-games
-      
+
   # tetris-client:
   #   main: tetris-client.hs
   #   source-dirs: app
   #   dependencies:
   #     - small-games
 
-  minesweeper:
-    main:                Main.hs
-    source-dirs:         MineSweeper
-    
-  seven-segment-display:
-    main:                Main.hs
-    source-dirs:         SevenSegmentDisplay
-    
+  # minesweeper:
+  #   main:                Main.hs
+  #   source-dirs:         MineSweeper
+
+  # seven-segment-display:
+  #   main:                Main.hs
+  #   source-dirs:         SevenSegmentDisplay
+
   dot-matrix-display:
-    main:                Main.hs
-    source-dirs:         DotMatrixDisplay
-    
-  snake:
-    main:                Main.hs
-    source-dirs:         Snake  
+    main: Main.hs
+    source-dirs: DotMatrixDisplay
+    dependencies:
+      - small-games
+
+  # snake:
+  #   main:                Main.hs
+  #   source-dirs:         Snake
+  #   dependencies:
