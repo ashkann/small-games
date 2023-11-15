@@ -15,6 +15,7 @@ library
       Counter
       Game
       Host
+      Internal
       RockPaperScissors
       Room
       TicTacToe

@@ -11,14 +11,13 @@ module BitmapFont
 where
 
 import Control.Monad (replicateM)
-import Control.Monad.Catch (MonadCatch, MonadThrow (throwM))
+import Control.Monad.Catch (MonadCatch, MonadThrow)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.State.Lazy qualified as S
-import Data.Bits (shiftL, testBit, (.|.))
-import Data.Char (digitToInt, isHexDigit)
+import Data.Bits (testBit)
 import Data.Map.Strict qualified as M
-import Data.Word (Word16, Word8)
-import GHC.Base (Applicative (liftA2), (<|>))
+import Data.Word (Word8)
+import GHC.Base ((<|>))
 import GHC.Char (chr)
 import Graphics.Gloss.Interface.Pure.Game
   ( Color,
@@ -32,6 +31,7 @@ import Graphics.Gloss.Interface.Pure.Game
 import Streamly.Data.Fold qualified as Fold
 import Streamly.Data.Stream qualified as Stream
 import Streamly.FileSystem.File qualified as File
+import Internal
 
 drawText :: Style -> Font -> String -> Picture
 drawText style font s = pictures $ zipWith (\x c -> atChar style x $ drawChar style font c) [0 :: Int ..] s
@@ -105,43 +105,16 @@ mkGlyph _ = Nothing
 
 type Font = M.Map Char Glyph
 
-glyph2 :: [Word8] -> Maybe Glyph
-glyph2 hex = rows $ go hex [] (16 :: Int)
-  where
-    go (c0 : rest) acc n | n /= 0 = let r = row c0 in go rest (r : acc) (n - 1)
-    go _ acc _ = acc
-    row c = Row (at 7) (at 6) (at 5) (at 4) (at 3) (at 2) (at 1) (at 0)
-      where
-        at i = if testBit c i then On else Off
-    rows [r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15] = Just $ Glyph r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15
-    rows _ = Nothing
-
-byte :: Char -> Char -> Word8
-byte hi lo = c hi `shiftL` 4 .|. c lo
-  where
-    c = fromIntegral . digitToInt
-
-word :: Word8 -> Word8 -> Word16
-word hi lo = fromIntegral hi `shiftL` 8 .|. fromIntegral lo
-
-type Parse m = S.StateT String m
-
 readFont :: (MonadIO m, MonadCatch m) => String -> m Font
 readFont fileName = Stream.fold addToFont $ Stream.take 128 glyphs
   where
-    glyphs = run parse hex
-    hex = chr . fromIntegral <$> File.read fileName
+    glyphs = runFile parse fileName
     addToFont = Fold.foldl' (\m (c, g) -> M.insert c g m) M.empty
 
 runStr :: (MonadThrow m) => Parse m a -> String -> m a
 runStr p cs = do
   maybeA <- Stream.fold Fold.one (run p $ Stream.fromList cs)
   maybe (err "Failed to parse glyph") return maybeA
-
-run :: (Monad m) => Parse m a -> Stream.Stream m Char -> Stream.Stream m a
-run p = Stream.mapM (S.evalStateT p) . readLines
-  where
-    readLines = Stream.foldMany (Fold.takeEndBy_ (== '\n') Fold.toList)
 
 parse :: (MonadThrow m) => Parse m (Char, Glyph)
 parse = do
@@ -152,24 +125,6 @@ parse = do
   where
     match c ch = if ch == c then return ch else err $ "Expected `" ++ [c] ++ "` but got `" ++ [ch] ++ "`"
 
-next :: (MonadThrow m) => Parse m Char
-next = S.get >>= f
-  where
-    f (c : rest)
-      | check c = S.put rest >> return c
-      | otherwise = err $ "Unexpected character: `" ++ [c] ++ "`"
-    f [] = err "End of input"
-    check c = isHexDigit c || c == ':'
-
-byte2 :: (MonadThrow m) => Parse m Word8
-byte2 = liftA2 byte next next
-
-word2 :: (MonadThrow m) => Parse m Word16
-word2 = liftA2 word byte2 byte2
-
-codePoint :: (MonadThrow m) => Parse m Char
-codePoint = toEnum . fromIntegral <$> word2
-
 glyph :: (MonadThrow m) => Parse m Glyph
 glyph = rows >>= fromMaybe . mkGlyph . reverse
   where
@@ -177,5 +132,5 @@ glyph = rows >>= fromMaybe . mkGlyph . reverse
     fromMaybe (Just a) = return a
     fromMaybe Nothing = err "Failed to parse glyph"
 
-err :: (MonadThrow m) => String -> m a
-err s = throwM $ userError s
+codePoint :: (MonadThrow m) => Parse m Char
+codePoint = toEnum . fromIntegral <$> word2    
