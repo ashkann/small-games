@@ -14,10 +14,8 @@ import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadCatch, MonadThrow (throwM))
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.State.Lazy qualified as S
-import Control.Monad.Trans (MonadTrans (lift))
 import Data.Bits (shiftL, testBit, (.|.))
-import Data.Char (digitToInt)
-import Data.List (uncons)
+import Data.Char (digitToInt, isHexDigit)
 import Data.Map.Strict qualified as M
 import Data.Word (Word16, Word8)
 import GHC.Base (Applicative (liftA2), (<|>))
@@ -39,11 +37,12 @@ drawText :: Style -> Font -> String -> Picture
 drawText style font s = pictures $ zipWith (\x c -> atChar style x $ drawChar style font c) [0 :: Int ..] s
 
 drawChar :: Style -> Font -> Char -> Picture
-drawChar style font c = case M.lookup c font <|> glyph2 replacement of
+drawChar style font c = case M.lookup c font <|> replacement of
   Just g -> drawGlyph style g
   Nothing -> blank
-  where
-    replacement = [0x00, 0x00, 0x00, 0x7E, 0x66, 0x5A, 0x5A, 0x7A, 0x76, 0x76, 0x7E, 0x76, 0x76, 0x7E, 0x00, 0x00]
+
+replacement :: (MonadThrow m) => m Glyph
+replacement = runStr glyph "0000007E665A5A7A76767E76767E0000"
 
 drawGlyph :: Style -> Glyph -> Picture
 drawGlyph style (Glyph r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15) =
@@ -53,11 +52,10 @@ drawGlyph style (Glyph r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15) =
 
 drawRow :: Style -> Row -> Picture
 drawRow style (Row b0 b1 b2 b3 b4 b5 b6 b7) =
-  pictures $ zipWith drw [1 :: Int ..] bits
+  pictures $ zipWith drw [1 :: Int ..] [b0, b1, b2, b3, b4, b5, b6, b7]
   where
     drw x On = atX style x $ on style
     drw _ Off = blank
-    bits = [b0, b1, b2, b3, b4, b5, b6, b7]
 
 data Style = Style
   { on :: Picture,
@@ -78,7 +76,7 @@ sqaureDotStyle c size space =
    in Style
         { on = color c dot,
           atX = \x -> translate (s x) 0,
-          atY = \y -> translate 0 (s y),
+          atY = translate 0 . s,
           atChar = \i -> translate (fromIntegral i * w) 0,
           width = w,
           height = s rowsPerGlyph
@@ -119,48 +117,65 @@ glyph2 hex = rows $ go hex [] (16 :: Int)
     rows _ = Nothing
 
 byte :: Char -> Char -> Word8
-byte hi lo = (c hi `shiftL` 4) .|. c lo
+byte hi lo = c hi `shiftL` 4 .|. c lo
   where
     c = fromIntegral . digitToInt
 
 word :: Word8 -> Word8 -> Word16
-word hi lo = (fromIntegral hi `shiftL` 8) .|. fromIntegral lo
+word hi lo = fromIntegral hi `shiftL` 8 .|. fromIntegral lo
 
-type Parse = S.StateT [Char] Maybe
+type Parse m = S.StateT String m
 
 readFont :: (MonadIO m, MonadCatch m) => String -> m Font
 readFont fileName = Stream.fold addToFont $ Stream.take 128 glyphs
   where
-    glyphs = Stream.mapM (run parse) $ Stream.foldMany readLine file
-    readLine = Fold.takeEndBy_ (== '\n') Fold.toList
-    file = chr . fromIntegral <$> File.read fileName
-    addToFont = Fold.foldMap $ uncurry M.singleton
+    glyphs = run parse hex
+    hex = chr . fromIntegral <$> File.read fileName
+    addToFont = Fold.foldl' (\m (c, g) -> M.insert c g m) M.empty
 
-run :: (MonadThrow m) => Parse a -> [Char] -> m a
-run p = nothingAsErr . S.evalStateT p
+runStr :: (MonadThrow m) => Parse m a -> String -> m a
+runStr p cs = do
+  maybeA <- Stream.fold Fold.one (run p $ Stream.fromList cs)
+  maybe (err "Failed to parse glyph") return maybeA
+
+run :: (Monad m) => Parse m a -> Stream.Stream m Char -> Stream.Stream m a
+run p = Stream.mapM (S.evalStateT p) . readLines
   where
-    nothingAsErr = maybe (throwM $ userError "Parse error") return
+    readLines = Stream.foldMany (Fold.takeEndBy_ (== '\n') Fold.toList)
 
-parse :: Parse (Char, Glyph)
+parse :: (MonadThrow m) => Parse m (Char, Glyph)
 parse = do
   c <- codePoint
-  _ <- match ':'
+  _ <- next >>= match ':'
   g <- glyph
   return (c, g)
   where
-    match c = next >>= (\ch -> lift $ if ch == c then Just () else Nothing)
+    match c ch = if ch == c then return ch else err $ "Expected `" ++ [c] ++ "` but got `" ++ [ch] ++ "`"
 
-next :: Parse Char
-next = S.StateT uncons
+next :: (MonadThrow m) => Parse m Char
+next = S.get >>= f
+  where
+    f (c : rest)
+      | check c = S.put rest >> return c
+      | otherwise = err $ "Unexpected character: `" ++ [c] ++ "`"
+    f [] = err "End of input"
+    check c = isHexDigit c || c == ':'
 
-byte2 :: Parse Word8
+byte2 :: (MonadThrow m) => Parse m Word8
 byte2 = liftA2 byte next next
 
-word2 :: Parse Word16
+word2 :: (MonadThrow m) => Parse m Word16
 word2 = liftA2 word byte2 byte2
 
-codePoint :: Parse Char
+codePoint :: (MonadThrow m) => Parse m Char
 codePoint = toEnum . fromIntegral <$> word2
 
-glyph :: Parse Glyph
-glyph = let rows = replicateM 16 $ mkRow <$> byte2 in (rows >>= lift . mkGlyph . reverse)
+glyph :: (MonadThrow m) => Parse m Glyph
+glyph = rows >>= fromMaybe . mkGlyph . reverse
+  where
+    rows = replicateM 16 $ mkRow <$> byte2
+    fromMaybe (Just a) = return a
+    fromMaybe Nothing = err "Failed to parse glyph"
+
+err :: (MonadThrow m) => String -> m a
+err s = throwM $ userError s

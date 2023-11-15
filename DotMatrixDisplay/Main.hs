@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE BangPatterns #-}
+
 
 module Main (main) where
 
@@ -18,6 +20,9 @@ import Graphics.Gloss.Interface.Pure.Game
     yellow,
   )
 import Graphics.Gloss.Interface.Pure.Game qualified as G
+import Debug.Trace (trace, traceShow)
+import Data.Map.Strict qualified as M
+
 
 windowWidth :: Int
 windowWidth = 1000
@@ -83,4 +88,5 @@ game font =
 main :: IO ()
 main = do
   font <- readFont "unifont_all-15.1.02.hex"
+  -- let !_ = traceShow (M.lookup 'A' font ) ()
   game font
