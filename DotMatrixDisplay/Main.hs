@@ -11,18 +11,12 @@ import Graphics.Gloss.Interface.Pure.Game
   ( Display (InWindow),
     Picture,
     black,
-    blue,
     color,
-    green,
     pictures,
     play,
     translate,
-    yellow,
   )
 import Graphics.Gloss.Interface.Pure.Game qualified as G
-import Debug.Trace (trace, traceShow)
-import Data.Map.Strict qualified as M
-
 
 windowWidth :: Int
 windowWidth = 1000
@@ -60,18 +54,22 @@ event _ w = w
 draw :: World -> Picture
 draw (World font t) =
   let l1 = "Seconds passed: " ++ show (floor t :: Int)
-      l2 = "ABCDEFGHIJKLMNOP±QRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 1234567890 !@#$%^&*()_+ ±"
-      s1 = sqaureDotStyle G.white 1 0
-      s2 = sqaureDotStyle blue 2 0
-      s3 = sqaureDotStyle green 3 0
-      s4 = sqaureDotStyle yellow 4 0
-      lines = [(l2, s1), (l2, s2), (l2, s3), (l1, s4)]
+      l2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789 !@#$%^&*()_+{}:|<>?;`~,./ ±"
+      s1 = 1.0
+      s2 = 2.0
+      s3 = 3.0
+      s4 = 4.0
+      c1 = G.white
+      c2 = G.blue
+      c3 = G.green
+      c4 = G.yellow
+      lines = [(l2, s1, c1), (l2, s2, c2), (l2, s3, c3), (l1, s4, c4)]
       x = negate . fromIntegral $ (windowWidth `div` 2) - 10
-      layout (str, style) = do
+      layout (str, s, c) = do
         y <- get
-        _ <- put $ y + height style
-        let coord = color green $ pictures [G.line [(0, 0), (0, 10)], G.line [(0, 0), (10, 0)]]
-        return $ translate x y (pictures $ coord : [drawText style font str])
+        _ <- put $ y + height s
+        let coord = pictures [G.line [(0, 0), (0, 16)], G.line [(0, 0), (8, 0)]]
+        return $ translate x y (color c $ G.scale s s $ pictures $ coord : [drawText font str])
    in pictures $ evalState (mapM layout lines) 0
 
 game :: Font -> IO ()
