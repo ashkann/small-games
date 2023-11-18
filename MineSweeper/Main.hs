@@ -5,20 +5,19 @@
 module Main (main) where
 
 import BitmapFont
-import Control.Monad.Reader (MonadReader (ask, local), Reader, asks, runReader)
+import Control.Monad.Reader (Reader, ask, asks, runReader)
 import Data.Array.IArray (Array, IArray (bounds), Ix (..), array, assocs, (!), (//))
+import Data.Foldable (foldl')
 import Graphics.Gloss.Interface.Pure.Game
   ( Color,
     Display (InWindow),
     Event (EventKey),
-    Key (MouseButton, SpecialKey),
+    Key (MouseButton),
     KeyState (Down, Up),
     Modifiers (Modifiers),
     MouseButton (LeftButton, RightButton),
     Picture (Text),
-    SpecialKey (KeyEsc),
     black,
-    circle,
     color,
     green,
     greyN,
@@ -55,12 +54,6 @@ data World = World {board :: Board, mines :: [CellPos], state :: WorldState}
 
 data Config = Config {font :: Font}
 
--- instance MonadReader Config IO where
---   ask :: IO Config
---   ask = _
---   local :: (Config -> Config) -> IO a -> IO a
---   local = _
-
 world0 :: World
 world0 = World (Board clean) mines Playing
   where
@@ -70,13 +63,11 @@ world0 = World (Board clean) mines Playing
       [ CellPos 0 0,
         CellPos 0 1,
         CellPos 1 1,
-        CellPos 2 1,
         CellPos 2 0,
         CellPos 1 2,
         CellPos 1 3,
         CellPos 0 8,
         CellPos 8 0,
-        CellPos 2 0,
         CellPos 2 1,
         CellPos 2 3,
         CellPos 3 3,
@@ -87,14 +78,27 @@ world0 = World (Board clean) mines Playing
       ]
 
 drawWorld :: World -> Game Picture
-drawWorld (World b mines st) = do
+drawWorld w@(World b mines st) = do
   restart <- drawRestart st
-  brd <-
-    let board
-          | st == Lost = drawBoardLost mines b
-          | otherwise = drawBoard b
-     in board
-  return $ pictures [brd, gridLines b, restart]
+  minesLeft <- drawMinesLeft w
+  board <- if st == Lost then drawBoardLost mines b else drawBoard b
+  return $ pictures [board, gridLines b, restart, minesLeft]
+
+drawMinesLeft :: World -> Game Picture
+drawMinesLeft (World b mines _) = do
+  font <- ask
+  let txt = show $ countMinesLeft b $ length mines
+      s = 2.0
+      dy = -(height s / 2)
+      dx = -(width2 s * fromIntegral (length txt) / 2)
+      label = color white $ translate dx dy $ scale s s $ drawText font txt
+  return $ translate (halfSize boardWidth) (halfSize boardHeight) label
+
+countMinesLeft :: Board -> Int -> Int
+countMinesLeft (Board b) total = foldl' (\c cell -> c - f cell) total b
+  where
+    f Flaged = 1
+    f _ = 0
 
 gridLines :: Board -> Picture
 gridLines (Board b) = center $ pictures $ draw <$> range (bounds b)
@@ -293,7 +297,7 @@ insideBoard x y =
    in if left <= x && x <= right && bottom <= y && y <= top then Just $ screen2cell x y else Nothing
 
 restartWidth :: Int
-restartWidth = 100
+restartWidth = 150
 
 restartHeight :: Int
 restartHeight = 50
@@ -319,8 +323,12 @@ drawRestart st =
         Won -> (green, "WON")
       y = fromIntegral $ wh2 - (h2 + restartMargin)
    in do
-        label <- asks (\font -> scale 2.0 2.0 $ drawText font txt)
+        font <- ask
         let button = rectangleWire (fromIntegral restartWidth) (fromIntegral restartHeight)
+            ss = 2.0
+            dy = -(height ss / 2)
+            dx = -(width2 ss * 8 / 2)
+            label = translate dx dy $ scale ss ss $ drawText font txt
         return $ color c $ translate 0 y $ pictures [button, label]
 
 windowWidth :: Int
@@ -340,6 +348,6 @@ main = do
     black
     5
     world0
-    (\w -> let x = drawWorld w in runReader x font)
+    (\w -> runReader (drawWorld w) font)
     event
     (\_ w -> w)

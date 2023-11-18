@@ -6,6 +6,7 @@ module BitmapFont
     drawText,
     Font,
     height,
+    width2
   )
 where
 
@@ -44,8 +45,8 @@ drawGlyph (Glyph rows) = pictures $ zipWith f [16 :: Int, 15 ..] rows
     bit x On = translate (fromIntegral x) 0 $ rectangleSolid 1 1
     bit _ Off = blank
 
-width :: Float -> Float
-width = (* 8)
+width2 :: Float -> Float
+width2 = (* 8)
 
 height :: Float -> Float
 height = (* 16)
