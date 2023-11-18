@@ -4,6 +4,8 @@
 
 module Main (main) where
 
+import BitmapFont
+import Control.Monad.Reader (MonadReader (ask, local), Reader, asks, runReader)
 import Data.Array.IArray (Array, IArray (bounds), Ix (..), array, assocs, (!), (//))
 import Graphics.Gloss.Interface.Pure.Game
   ( Color,
@@ -38,6 +40,9 @@ data ScreenPos = ScreenPos Float Float deriving (Eq, Ord)
 
 data Count = Zero | One | Two | Three | Four | Five | Six | Seven | Eight deriving (Eq, Enum)
 
+instance Show Count where
+  show = show . fromEnum
+
 data Cell = Flaged | Opened Count | UnOpened deriving (Eq)
 
 data CellPos = CellPos Int Int deriving (Eq, Ord, Ix, Show)
@@ -47,6 +52,14 @@ newtype Board = Board (Array CellPos Cell)
 data WorldState = Playing | Lost | Won deriving (Eq)
 
 data World = World {board :: Board, mines :: [CellPos], state :: WorldState}
+
+data Config = Config {font :: Font}
+
+-- instance MonadReader Config IO where
+--   ask :: IO Config
+--   ask = _
+--   local :: (Config -> Config) -> IO a -> IO a
+--   local = _
 
 world0 :: World
 world0 = World (Board clean) mines Playing
@@ -73,13 +86,15 @@ world0 = World (Board clean) mines Playing
         CellPos 5 6
       ]
 
-drawWorld :: World -> Picture
-drawWorld (World b mines st) =
-  let restart = drawRestart st
-      board
-        | st == Lost = drawBoardLost mines b
-        | otherwise = drawBoard b
-   in pictures [board, gridLines b, restart]
+drawWorld :: World -> Game Picture
+drawWorld (World b mines st) = do
+  restart <- drawRestart st
+  brd <-
+    let board
+          | st == Lost = drawBoardLost mines b
+          | otherwise = drawBoard b
+     in board
+  return $ pictures [brd, gridLines b, restart]
 
 gridLines :: Board -> Picture
 gridLines (Board b) = center $ pictures $ draw <$> range (bounds b)
@@ -115,33 +130,31 @@ screen2cell x y =
 drawFlag :: Picture
 drawFlag = let s = halfSize (1 :: Integer) in color red $ line [(-s, -s), (s, s)] <> line [(-s, s), (s, -s)]
 
-drawCell :: Cell -> Picture
-drawCell Flaged = pictures [emptyCell, drawFlag]
-drawCell (Opened Zero) = pictures [emptyCell' $ greyN 0.5]
-drawCell (Opened c) = pictures [emptyCell, color (for c) (translate (-cellSize / 2 + 5) (-cellSize / 2 + 5) $ scale 0.25 0.25 $ pictures [circle 2.0, number c])]
-drawCell UnOpened = emptyCell
+type Game = Reader Font
 
-number :: Count -> Picture
-number Zero = pictures [Text "0"]
-number One = pictures [Text "1"]
-number Two = pictures [Text "2"]
-number Three = pictures [Text "3"]
-number Four = pictures [Text "4"]
-number Five = pictures [Text "5"]
-number Six = pictures [Text "6"]
-number Seven = pictures [Text "7"]
-number Eight = pictures [Text "8"]
+drawCell :: Cell -> Game Picture
+drawCell Flaged = return $ pictures [emptyCell, drawFlag]
+drawCell (Opened Zero) = return $ pictures [emptyCell' $ greyN 0.5]
+drawCell (Opened c) = (\num -> pictures [emptyCell, num]) <$> number2 c
+drawCell UnOpened = return emptyCell
 
-for :: Count -> Color
-for Zero = white
-for One = makeColorI 0 0 245 0
-for Two = makeColorI 56 128 34 0
-for Three = makeColorI 228 51 36 0
-for Four = makeColorI 0 0 127 0
-for Five = makeColorI 121 21 13 0
-for Six = makeColorI 56 128 130 0
-for Seven = makeColorI 121 12 128 0
-for Eight = greyN 0.5
+number2 :: Count -> Game Picture
+number2 c = asks (number c)
+
+number :: Count -> Font -> Picture
+number c font = translate d d $ color (for c) $ scale s s $ drawText font $ show c
+  where
+    s = 2.0
+    d = -cellSize / 2 + 5
+    for Zero = white
+    for One = makeColorI 0 0 245 255
+    for Two = makeColorI 56 128 34 255
+    for Three = makeColorI 228 51 36 255
+    for Four = makeColorI 0 0 127 255
+    for Five = makeColorI 121 21 13 255
+    for Six = makeColorI 56 128 130 255
+    for Seven = makeColorI 121 12 128 0255
+    for Eight = greyN 0.5
 
 background :: Color
 background = greyN 0.7
@@ -247,22 +260,22 @@ boardWidth = 9
 boardHeight :: Int
 boardHeight = 9
 
-drawBoard' :: (CellPos -> Cell -> Picture) -> Board -> Picture
-drawBoard' draw (Board b) = center $ pictures $ uncurry draw <$> assocs b
+drawBoard' :: (CellPos -> Cell -> Game Picture) -> Board -> Game Picture
+drawBoard' draw (Board b) = center . pictures <$> traverse (uncurry draw) (assocs b)
 
-drawBoard :: Board -> Picture
-drawBoard = drawBoard' (\p c -> at p $ drawCell c)
+drawBoard :: Board -> Game Picture
+drawBoard = drawBoard' (\p c -> at p <$> drawCell c)
 
-drawBoardLost :: [CellPos] -> Board -> Picture
+drawBoardLost :: [CellPos] -> Board -> Game Picture
 drawBoardLost mines = drawBoard' draw
   where
     draw p c =
       let out
-            | c == Flaged && p `notElem` mines = mine incorrect
-            | c == Flaged && p `elem` mines = mine correct
-            | p `elem` mines = mine background
+            | c == Flaged && p `notElem` mines = return $ mine incorrect
+            | c == Flaged && p `elem` mines = return $ mine correct
+            | p `elem` mines = return $ mine background
             | otherwise = drawCell c
-       in at p out
+       in at p <$> out
     mine c = pictures [emptyCell' c, drawFlag]
 
 at :: CellPos -> Picture -> Picture
@@ -296,20 +309,19 @@ insideRestart x y =
       bottom = top - fromIntegral restartHeight
    in if left <= x && x <= right && bottom <= y && y <= top then Just $ CellPos 0 0 else Nothing
 
-drawRestart :: WorldState -> Picture
+drawRestart :: WorldState -> Game Picture
 drawRestart st =
   let h2 = restartHeight `div` 2
       wh2 = windowHeight `div` 2
-      c = case st of
-        Playing -> greyN 0.5
-        Lost -> red
-        Won -> green
+      (c, txt) = case st of
+        Playing -> (greyN 0.5, "RESTART")
+        Lost -> (red, "LOST")
+        Won -> (green, "WON")
       y = fromIntegral $ wh2 - (h2 + restartMargin)
-   in ( color c $
-          translate 0 y $
-            pictures
-              [rectangleWire (fromIntegral restartWidth) (fromIntegral restartHeight)]
-      )
+   in do
+        label <- asks (\font -> scale 2.0 2.0 $ drawText font txt)
+        let button = rectangleWire (fromIntegral restartWidth) (fromIntegral restartHeight)
+        return $ color c $ translate 0 y $ pictures [button, label]
 
 windowWidth :: Int
 windowWidth = 500
@@ -322,11 +334,12 @@ cellSize = 35
 
 main :: IO ()
 main = do
+  font <- readFont "unifont_all-15.1.02.hex"
   play
     (InWindow "Mine Sweeper" (windowWidth, windowHeight) (10, 10))
     black
     5
     world0
-    drawWorld
+    (\w -> let x = drawWorld w in runReader x font)
     event
     (\_ w -> w)
