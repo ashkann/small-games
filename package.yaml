@@ -22,6 +22,10 @@ dependencies:
   - attoparsec
   - mtl
   - gloss
+  - streamly
+  - streamly-core
+  - exceptions
+  - vector
 
 ghc-options:
   - -Wall
@@ -50,7 +54,7 @@ executables:
   #   source-dirs: app
   #   dependencies:
   #     - small-games
-      
+
   # server:
   #   main: server.hs
   #   source-dirs: app
@@ -62,17 +66,28 @@ executables:
   #   source-dirs: app
   #   dependencies:
   #     - small-games
-      
+
   # tetris-client:
   #   main: tetris-client.hs
   #   source-dirs: app
   #   dependencies:
   #     - small-games
 
-  minesweeper:
-    main:                Main.hs
-    source-dirs:         MineSweeper
-    
-  snake:
-    main:                Main.hs
-    source-dirs:         Snake  
+  # minesweeper:
+  #   main:                Main.hs
+  #   source-dirs:         MineSweeper
+
+  # seven-segment-display:
+  #   main:                Main.hs
+  #   source-dirs:         SevenSegmentDisplay
+
+ bitmap-font:
+    main: Main.hs
+    source-dirs: BitmapFont
+    dependencies:
+      - small-games
+
+  # snake:
+  #   main:                Main.hs
+  #   source-dirs:         Snake
+  #   dependencies:
