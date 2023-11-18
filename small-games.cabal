@@ -85,3 +85,38 @@ executable bitmap-font
     , yesod-core
     , yesod-eventsource
   default-language: Haskell2010
+
+executable minesweeper
+  main-is: Main.hs
+  other-modules:
+      Paths_small_games
+  hs-source-dirs:
+      MineSweeper
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
+  build-depends:
+      aeson
+    , array
+    , attoparsec
+    , base >=4.7 && <5
+    , binary
+    , bytestring
+    , conduit
+    , conduit-extra
+    , containers
+    , exceptions
+    , gloss
+    , http-conduit
+    , mtl
+    , random
+    , resourcet
+    , small-games
+    , stm
+    , streamly
+    , streamly-core
+    , text
+    , uuid
+    , vector
+    , wai-extra
+    , yesod-core
+    , yesod-eventsource
+  default-language: Haskell2010

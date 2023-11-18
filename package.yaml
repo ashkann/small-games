@@ -73,15 +73,17 @@ executables:
   #   dependencies:
   #     - small-games
 
-  # minesweeper:
-  #   main:                Main.hs
-  #   source-dirs:         MineSweeper
+  minesweeper:
+    main: Main.hs
+    source-dirs: MineSweeper
+    dependencies:
+      - small-games
 
   # seven-segment-display:
   #   main:                Main.hs
   #   source-dirs:         SevenSegmentDisplay
 
- bitmap-font:
+  bitmap-font:
     main: Main.hs
     source-dirs: BitmapFont
     dependencies:
