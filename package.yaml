@@ -81,9 +81,9 @@ executables:
   #   main:                Main.hs
   #   source-dirs:         SevenSegmentDisplay
 
-  dot-matrix-display:
+ bitmap-font:
     main: Main.hs
-    source-dirs: DotMatrixDisplay
+    source-dirs: BitmapFont
     dependencies:
       - small-games
 

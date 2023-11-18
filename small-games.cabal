@@ -51,12 +51,12 @@ library
     , yesod-eventsource
   default-language: Haskell2010
 
-executable dot-matrix-display
+executable bitmap-font
   main-is: Main.hs
   other-modules:
       Paths_small_games
   hs-source-dirs:
-      DotMatrixDisplay
+      BitmapFont
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wmissing-methods -threaded
   build-depends:
       aeson
