@@ -58,6 +58,11 @@ err = throwM . Error
 runFile :: (MonadIO m, MonadCatch m) => Parse m a -> String -> Stream.Stream m a
 runFile p = run p . fmap (chr . fromIntegral) . File.read
 
+runStr :: (MonadThrow m) => Parse m a -> String -> m a
+runStr p cs = do
+  maybeA <- Stream.fold Fold.one (run p $ Stream.fromList cs)
+  maybe (err "Failed to parse glyph") return maybeA
+
 run :: (Monad m) => Parse m a -> Stream.Stream m Char -> Stream.Stream m a
 run p = Stream.mapM (S.evalStateT p) . readLines
   where
@@ -111,8 +116,3 @@ insertGlyph = M.insert
 
 replacement :: (MonadThrow m) => m Glyph
 replacement = runStr glyph "0000007E665A5A7A76767E76767E0000"
-
-runStr :: (MonadThrow m) => Parse m a -> String -> m a
-runStr p cs = do
-  maybeA <- Stream.fold Fold.one (run p $ Stream.fromList cs)
-  maybe (err "Failed to parse glyph") return maybeA

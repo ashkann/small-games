@@ -1,11 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Main (main) where
 
 import BitmapFont
-import Control.Monad.Reader (Reader, ask, asks, runReader)
+import Control.Monad.Reader (MonadReader, ReaderT, ask, asks, runReader)
 import Data.Array.IArray (Array, IArray (bounds), Ix (..), array, assocs, (!), (//))
 import Data.Foldable (foldl')
 import Graphics.Gloss.Interface.Pure.Game
@@ -16,7 +17,7 @@ import Graphics.Gloss.Interface.Pure.Game
     KeyState (Down, Up),
     Modifiers (Modifiers),
     MouseButton (LeftButton, RightButton),
-    Picture (Text),
+    Picture,
     black,
     color,
     green,
@@ -54,6 +55,11 @@ data World = World {board :: Board, mines :: [CellPos], state :: WorldState}
 
 data Config = Config {font :: Font}
 
+class (MonadReader Font m) => Game m
+
+-- instance MonadReader Font m => Game m
+-- instance Game (Reader Font)
+
 world0 :: World
 world0 = World (Board clean) mines Playing
   where
@@ -77,14 +83,14 @@ world0 = World (Board clean) mines Playing
         CellPos 5 6
       ]
 
-drawWorld :: World -> Game Picture
+drawWorld :: (Game m) => World -> m Picture
 drawWorld w@(World b mines st) = do
   restart <- drawRestart st
   minesLeft <- drawMinesLeft w
   board <- if st == Lost then drawBoardLost mines b else drawBoard b
   return $ pictures [board, gridLines b, restart, minesLeft]
 
-drawMinesLeft :: World -> Game Picture
+drawMinesLeft :: (Game m) => World -> m Picture
 drawMinesLeft (World b mines _) = do
   font <- ask
   let txt = show $ countMinesLeft b $ length mines
@@ -134,20 +140,16 @@ screen2cell x y =
 drawFlag :: Picture
 drawFlag = let s = halfSize (1 :: Integer) in color red $ line [(-s, -s), (s, s)] <> line [(-s, s), (s, -s)]
 
-type Game = Reader Font
-
-drawCell :: Cell -> Game Picture
+drawCell :: (Game m) => Cell -> m Picture
 drawCell Flaged = return $ pictures [emptyCell, drawFlag]
 drawCell (Opened Zero) = return $ pictures [emptyCell' $ greyN 0.5]
-drawCell (Opened c) = (\num -> pictures [emptyCell, num]) <$> number2 c
+drawCell (Opened c) = (\num -> pictures [emptyCell, num]) <$> number c
 drawCell UnOpened = return emptyCell
 
-number2 :: Count -> Game Picture
-number2 c = asks (number c)
-
-number :: Count -> Font -> Picture
-number c font = translate d d $ color (for c) $ scale s s $ drawText font $ show c
+number :: (Game m) => Count -> m Picture
+number cnt = asks (f cnt)
   where
+    f c font = translate d d $ color (for c) $ scale s s $ drawText font $ show c
     s = 2.0
     d = -cellSize / 2 + 5
     for Zero = white
@@ -264,13 +266,13 @@ boardWidth = 9
 boardHeight :: Int
 boardHeight = 9
 
-drawBoard' :: (CellPos -> Cell -> Game Picture) -> Board -> Game Picture
+drawBoard' :: (Game m) => (CellPos -> Cell -> m Picture) -> Board -> m Picture
 drawBoard' draw (Board b) = center . pictures <$> traverse (uncurry draw) (assocs b)
 
-drawBoard :: Board -> Game Picture
+drawBoard :: (Game m) => Board -> m Picture
 drawBoard = drawBoard' (\p c -> at p <$> drawCell c)
 
-drawBoardLost :: [CellPos] -> Board -> Game Picture
+drawBoardLost :: (Game m) => [CellPos] -> Board -> m Picture
 drawBoardLost mines = drawBoard' draw
   where
     draw p c =
@@ -313,7 +315,7 @@ insideRestart x y =
       bottom = top - fromIntegral restartHeight
    in if left <= x && x <= right && bottom <= y && y <= top then Just $ CellPos 0 0 else Nothing
 
-drawRestart :: WorldState -> Game Picture
+drawRestart :: (Game m) => WorldState -> m Picture
 drawRestart st =
   let h2 = restartHeight `div` 2
       wh2 = windowHeight `div` 2
@@ -339,6 +341,13 @@ windowHeight = 500
 
 cellSize :: Float
 cellSize = 35
+
+-- type Ash = Reader Font
+
+-- runGame :: Game m => m a -> Font -> a
+-- runGame ma font = runReader ma font
+
+instance (Monad m) => Game (ReaderT Font m)
 
 main :: IO ()
 main = do
